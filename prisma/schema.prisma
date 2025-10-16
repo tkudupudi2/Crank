@@ -1,0 +1,154 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts         Account[]
+  transactions     Transaction[]
+  payments         Payment[]
+  paymentSchedules PaymentSchedule[]
+  plaidItems       PlaidItem[]
+  syncStatus       SyncStatus?
+
+  @@map("users")
+}
+
+model Account {
+  id              String    @id @default(cuid())
+  userId          String
+  plaidAccountId  String    @unique
+  plaidItemId     String
+  institutionId   String
+  institutionName String
+  name            String
+  type            String    // 'credit', 'depository', 'loan', 'investment'
+  subtype         String?   // 'credit_card', 'checking', 'savings', etc.
+  mask            String?   // Last 4 digits
+  currentBalance  Float?
+  availableBalance Float?
+  currencyCode    String    @default("USD")
+  dueDate         DateTime? // For credit cards: payment due date
+  minimumPayment  Float?    // For credit cards: minimum payment required
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions    Transaction[]
+  paymentsFrom    Payment[]       @relation("PaymentFromAccount")
+  paymentsTo      Payment[]       @relation("PaymentToAccount")
+  schedulesFrom   PaymentSchedule[] @relation("ScheduleFromAccount")
+  schedulesTo     PaymentSchedule[] @relation("ScheduleToAccount")
+
+  @@map("accounts")
+}
+
+model Transaction {
+  id              String    @id @default(cuid())
+  userId          String
+  accountId       String
+  plaidTransactionId String @unique
+  amount          Float
+  description     String
+  merchantName    String?
+  category        String[]
+  subcategory     String?
+  date            DateTime
+  pending         Boolean   @default(false)
+  accountOwner    String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@map("transactions")
+}
+
+model Payment {
+  id              String    @id @default(cuid())
+  userId          String
+  fromAccountId   String    // Bank account to pay from
+  toAccountId     String    // Credit card to pay to
+  amount          Float
+  description     String?
+  status          String    @default("pending") // 'pending', 'processing', 'completed', 'failed', 'cancelled'
+  paymentType     String    @default("manual") // 'manual', 'scheduled', 'auto'
+  scheduledDate   DateTime? // When payment should be processed
+  processedDate   DateTime? // When payment was actually processed
+  failureReason   String?   // Reason if payment failed
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fromAccount Account @relation("PaymentFromAccount", fields: [fromAccountId], references: [id], onDelete: Cascade)
+  toAccount   Account @relation("PaymentToAccount", fields: [toAccountId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+model PlaidItem {
+  id           String   @id @default(cuid())
+  userId       String
+  plaidItemId  String   @unique
+  accessToken  String   @unique
+  institutionId String
+  institutionName String
+  status       String   @default("active")
+  lastSyncAt   DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("plaid_items")
+}
+
+model PaymentSchedule {
+  id              String    @id @default(cuid())
+  userId          String
+  fromAccountId   String    // Bank account to pay from
+  toAccountId     String    // Credit card to pay to
+  amount          Float?
+  paymentType     String    // 'minimum', 'full_balance', 'custom'
+  frequency       String    @default("monthly") // 'monthly', 'weekly', 'bi_weekly'
+  dayOfMonth      Int?      // For monthly: day of month (1-31)
+  dayOfWeek       Int?      // For weekly: day of week (0-6, Sunday=0)
+  isActive        Boolean   @default(true)
+  nextPaymentDate DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fromAccount Account @relation("ScheduleFromAccount", fields: [fromAccountId], references: [id], onDelete: Cascade)
+  toAccount   Account @relation("ScheduleToAccount", fields: [toAccountId], references: [id], onDelete: Cascade)
+
+  @@map("payment_schedules")
+}
+
+model SyncStatus {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  hasInitialSync Boolean @default(false)
+  lastSyncAt   DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sync_status")
+}

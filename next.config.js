@@ -1,0 +1,19 @@
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  experimental: {
+    appDir: true,
+  },
+  env: {
+    PLAID_CLIENT_ID: process.env.PLAID_CLIENT_ID,
+    PLAID_SECRET: process.env.PLAID_SECRET,
+    PLAID_ENV: process.env.PLAID_ENV || 'sandbox',
+    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+    DATABASE_URL: process.env.DATABASE_URL,
+  },
+  images: {
+    domains: ['images.unsplash.com'],
+  },
+}
+
+module.exports = nextConfig
