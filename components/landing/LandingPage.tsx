@@ -44,7 +44,7 @@ export default function LandingPage() {
         <div className="space-x-4">
           <Link href="/auth/signup">
             <Button size="lg" className="text-lg px-8 py-3">
-              Get Started Free
+              Get Started
             </Button>
           </Link>
           <Button 
@@ -55,11 +55,6 @@ export default function LandingPage() {
           >
             Sign In
           </Button>
-        </div>
-        <div className="mt-4 text-center">
-          <p className="text-sm text-gray-600">
-            🆓 Completely free with Auth0, Supabase, and Plaid sandbox
-          </p>
         </div>
       </section>
 
@@ -133,35 +128,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Free Services Section */}
-      <section className="px-6 py-20 bg-gray-50">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl font-bold mb-6 text-gray-900">
-            Built with Free Services
-          </h2>
-          <p className="text-xl mb-12 text-gray-600">
-            No hidden costs, no credit card required - completely free to use
-          </p>
-          <div className="grid md:grid-cols-4 gap-6">
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <div className="text-2xl font-bold text-purple-600 mb-2">Auth0</div>
-              <p className="text-sm text-gray-600">Free authentication for 7,000 users</p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <div className="text-2xl font-bold text-green-600 mb-2">Supabase</div>
-              <p className="text-sm text-gray-600">Free PostgreSQL database</p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <div className="text-2xl font-bold text-purple-600 mb-2">Plaid</div>
-              <p className="text-sm text-gray-600">Free sandbox environment</p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <div className="text-2xl font-bold text-orange-600 mb-2">Vercel</div>
-              <p className="text-sm text-gray-600">Free hosting & deployment</p>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* CTA Section */}
       <section className="px-6 py-20 bg-primary text-primary-foreground">
@@ -174,7 +140,7 @@ export default function LandingPage() {
           </p>
           <Link href="/auth/signup">
             <Button size="lg" variant="secondary" className="text-lg px-8 py-3">
-              Get Started Free
+              Get Started
             </Button>
           </Link>
         </div>
