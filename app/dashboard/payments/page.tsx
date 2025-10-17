@@ -13,8 +13,8 @@ export default async function PaymentsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Payments</h1>
-        <p className="text-gray-600 dark:text-gray-400">
+        <h1 className="text-3xl font-bold text-gray-900">Payments</h1>
+        <p className="text-gray-600">
           Track and manage your credit card payments
         </p>
       </div>

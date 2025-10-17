@@ -23,6 +23,7 @@ model User {
   paymentSchedules PaymentSchedule[]
   plaidItems       PlaidItem[]
   syncStatus       SyncStatus?
+  userPreferences  UserPreferences?
 
   @@map("users")
 }
@@ -151,4 +152,19 @@ model SyncStatus {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("sync_status")
+}
+
+model UserPreferences {
+  id                      String   @id @default(cuid())
+  userId                  String   @unique
+  budgetCategoryOrder     String[] // Array of category IDs in user's preferred order
+  budgetCategoryBudgets   Json     // Object mapping category IDs to budget amounts
+  budgetCategoryColors    Json     // Object mapping category IDs to color classes
+  budgetPreferences       Json?    // Object containing budget settings (total budget, duration, etc.)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
 }

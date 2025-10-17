@@ -44,6 +44,7 @@ export default function TransactionsList({ transactions, accounts }: Transaction
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedAccount, setSelectedAccount] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
+  const [selectedDateRange, setSelectedDateRange] = useState('')
   const [isSyncing, setIsSyncing] = useState(false)
   const [syncResult, setSyncResult] = useState<{ success: boolean; message?: string; error?: string } | null>(null)
   const router = useRouter()
@@ -53,6 +54,47 @@ export default function TransactionsList({ transactions, accounts }: Transaction
       style: 'currency',
       currency: 'USD',
     }).format(amount)
+  }
+
+  const getDateRange = (range: string) => {
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    
+    switch (range) {
+      case 'last-1-week':
+        const lastWeek = new Date(today)
+        lastWeek.setDate(today.getDate() - 7)
+        return { start: lastWeek, end: today }
+      case 'last-2-weeks':
+        const last2Weeks = new Date(today)
+        last2Weeks.setDate(today.getDate() - 14)
+        return { start: last2Weeks, end: today }
+      case 'last-30-days':
+        const last30Days = new Date(today)
+        last30Days.setDate(today.getDate() - 30)
+        return { start: last30Days, end: today }
+      case 'last-3-months':
+        const last3Months = new Date(today)
+        last3Months.setMonth(today.getMonth() - 3)
+        return { start: last3Months, end: today }
+      case 'last-6-months':
+        const last6Months = new Date(today)
+        last6Months.setMonth(today.getMonth() - 6)
+        return { start: last6Months, end: today }
+      case 'last-year':
+        const lastYear = new Date(today)
+        lastYear.setFullYear(today.getFullYear() - 1)
+        return { start: lastYear, end: today }
+      case 'this-month':
+        const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1)
+        return { start: thisMonth, end: today }
+      case 'last-month':
+        const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1)
+        const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0)
+        return { start: lastMonth, end: lastMonthEnd }
+      default:
+        return null
+    }
   }
 
   const handleManualSync = async () => {
@@ -99,8 +141,18 @@ export default function TransactionsList({ transactions, accounts }: Transaction
                          (transaction.merchantName && transaction.merchantName.toLowerCase().includes(searchTerm.toLowerCase()))
     const matchesAccount = !selectedAccount || transaction.account.id === selectedAccount
     const matchesCategory = !selectedCategory || transaction.category.includes(selectedCategory)
+    
+    // Date filtering
+    let matchesDateRange = true
+    if (selectedDateRange) {
+      const dateRange = getDateRange(selectedDateRange)
+      if (dateRange) {
+        const transactionDate = new Date(transaction.date)
+        matchesDateRange = transactionDate >= dateRange.start && transactionDate <= dateRange.end
+      }
+    }
 
-    return matchesSearch && matchesAccount && matchesCategory
+    return matchesSearch && matchesAccount && matchesCategory && matchesDateRange
   })
 
 
@@ -149,7 +201,7 @@ export default function TransactionsList({ transactions, accounts }: Transaction
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2">Search</label>
               <div className="relative">
@@ -192,6 +244,24 @@ export default function TransactionsList({ transactions, accounts }: Transaction
                 ))}
               </select>
             </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Date Range</label>
+              <select
+                value={selectedDateRange}
+                onChange={(e) => setSelectedDateRange(e.target.value)}
+                className="w-full p-2 border rounded-md"
+              >
+                <option value="">All time</option>
+                <option value="last-1-week">Last 1 week</option>
+                <option value="last-2-weeks">Last 2 weeks</option>
+                <option value="last-30-days">Last 30 days</option>
+                <option value="last-3-months">Last 3 months</option>
+                <option value="last-6-months">Last 6 months</option>
+                <option value="last-year">Last year</option>
+                <option value="this-month">This month</option>
+                <option value="last-month">Last month</option>
+              </select>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -225,10 +295,31 @@ export default function TransactionsList({ transactions, accounts }: Transaction
       {/* Transactions List */}
       <Card>
         <CardHeader>
-          <CardTitle>Transactions</CardTitle>
-          <CardDescription>
-            {filteredTransactions.length} of {transactions.length} transactions
-          </CardDescription>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Transactions</CardTitle>
+              <CardDescription>
+                {filteredTransactions.length} of {transactions.length} transactions
+                {(searchTerm || selectedAccount || selectedCategory || selectedDateRange) && (
+                  <span className="ml-2 text-blue-600">(filtered)</span>
+                )}
+              </CardDescription>
+            </div>
+            {(searchTerm || selectedAccount || selectedCategory || selectedDateRange) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearchTerm('')
+                  setSelectedAccount('')
+                  setSelectedCategory('')
+                  setSelectedDateRange('')
+                }}
+              >
+                Clear All Filters
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {filteredTransactions.length === 0 ? (

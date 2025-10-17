@@ -7,7 +7,7 @@ export default function SignUpPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-2 mb-2">
-            <Cog className="h-8 w-8 text-primary" />
+            <Cog className="h-8 w-8 text-black" />
             <h1 className="text-3xl font-bold text-gray-900">Crank</h1>
           </div>
           <p className="text-gray-600">Create your account</p>

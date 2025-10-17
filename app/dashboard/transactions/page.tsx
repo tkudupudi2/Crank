@@ -251,9 +251,9 @@ export default async function TransactionsPage() {
 
          return (
            <div className="space-y-6">
-             <div>
-               <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Transactions</h1>
-               <p className="text-gray-600 dark:text-gray-400">View and manage your transaction history</p>
+                 <div>
+                   <h1 className="text-3xl font-bold text-gray-900">Transactions</h1>
+                   <p className="text-gray-600">View and manage your transaction history</p>
                {syncResult && syncResult.isInitialSync && (
                  <div className={`mt-2 p-3 rounded-lg text-sm ${
                    syncResult.success 

@@ -18,10 +18,7 @@ import {
   AlertTriangle,
   Settings as SettingsIcon,
   Database,
-  Sun,
-  Moon
 } from 'lucide-react'
-import { useTheme } from '@/components/theme/ThemeProvider'
 
 interface User {
   id: string
@@ -60,7 +57,6 @@ export default function SettingsContent({ user, connectedAccounts, plaidItems }:
   const [paymentReminders, setPaymentReminders] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
-  const { theme, toggleTheme } = useTheme()
 
   const handleSaveSettings = async () => {
     setSaving(true)
@@ -216,22 +212,8 @@ export default function SettingsContent({ user, connectedAccounts, plaidItems }:
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="font-medium">Dark Mode</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Switch between light and dark themes</p>
-            </div>
-            <Button
-              variant={theme === 'dark' ? "default" : "outline"}
-              size="sm"
-              onClick={toggleTheme}
-            >
-              {theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-              {theme === 'dark' ? 'Dark' : 'Light'}
-            </Button>
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
               <h4 className="font-medium">Show Account Balances</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Display account balances by default</p>
+              <p className="text-sm text-gray-600 ">Display account balances by default</p>
             </div>
             <Button
               variant={showBalances ? "default" : "outline"}

@@ -182,12 +182,12 @@ export default function AnalyticsBlurb({ transactions, accounts }: AnalyticsBlur
 
         {/* Quick Insights */}
         {monthlySpending > 0 && (
-          <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <div className="mt-4 p-3 bg-gray-50  rounded-lg">
             <div className="flex items-center space-x-2 mb-2">
               <TrendingUp className="h-4 w-4 text-blue-500" />
-              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Quick Insight</span>
+              <span className="text-sm font-medium text-gray-900 ">Quick Insight</span>
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-sm text-gray-600 ">
               You've spent {formatCurrency(monthlySpending)} this month, with {topCategory.category} being your largest expense category.
               {spendingChange > 0 ? (
                 <span className="text-red-500"> Spending is up {spendingChange.toFixed(1)}% from last month.</span>

@@ -181,7 +181,7 @@ export default function PaymentForm({ creditCard, onClose, onSuccess }: PaymentF
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Credit Card Info */}
-            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+            <div className="bg-gray-50  p-4 rounded-lg">
               <h3 className="font-semibold mb-2">Credit Card Details</h3>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
@@ -248,7 +248,7 @@ export default function PaymentForm({ creditCard, onClose, onSuccess }: PaymentF
                     key={account.id}
                     className={`p-3 border rounded-lg cursor-pointer transition-colors ${
                       selectedBankAccount === account.id
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                        ? 'border-blue-500 bg-blue-50 '
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                     onClick={() => setSelectedBankAccount(account.id)}

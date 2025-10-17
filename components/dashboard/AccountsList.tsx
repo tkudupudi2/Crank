@@ -588,16 +588,16 @@ export default function AccountsList({ accounts, creditCards, bankAccounts }: Ac
       {/* Account Info Modal */}
       {showAccountModal && selectedAccount && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">
                 Account Information
               </h2>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleCloseAccountModal}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                className="text-gray-500 hover:text-gray-700"
               >
                 <X className="h-5 w-5" />
               </Button>
@@ -614,10 +614,10 @@ export default function AccountsList({ accounts, creditCards, bankAccounts }: Ac
                   )}
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  <h3 className="text-lg font-semibold text-gray-900">
                     {selectedAccount.name}
                   </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-sm text-gray-600">
                     {selectedAccount.institutionName} • {selectedAccount.subtype || selectedAccount.type}
                   </p>
                 </div>
@@ -627,38 +627,38 @@ export default function AccountsList({ accounts, creditCards, bankAccounts }: Ac
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Basic Information */}
                 <div className="space-y-4">
-                  <h4 className="font-medium text-gray-900 dark:text-gray-100 flex items-center">
+                  <h4 className="font-medium text-gray-900 flex items-center">
                     <Info className="h-4 w-4 mr-2" />
                     Basic Information
                   </h4>
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Account ID</span>
-                      <span className="text-sm font-mono text-gray-900 dark:text-gray-100">
+                      <span className="text-sm text-gray-600 ">Account ID</span>
+                      <span className="text-sm font-mono text-gray-900 ">
                         {selectedAccount.id.slice(0, 8)}...
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Account Type</span>
-                      <span className="text-sm text-gray-900 dark:text-gray-100 capitalize">
+                      <span className="text-sm text-gray-600 ">Account Type</span>
+                      <span className="text-sm text-gray-900  capitalize">
                         {selectedAccount.type}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Subtype</span>
-                      <span className="text-sm text-gray-900 dark:text-gray-100 capitalize">
+                      <span className="text-sm text-gray-600 ">Subtype</span>
+                      <span className="text-sm text-gray-900  capitalize">
                         {selectedAccount.subtype || 'N/A'}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Account Number</span>
-                      <span className="text-sm font-mono text-gray-900 dark:text-gray-100">
+                      <span className="text-sm text-gray-600 ">Account Number</span>
+                      <span className="text-sm font-mono text-gray-900 ">
                         •••• {selectedAccount.mask}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Currency</span>
-                      <span className="text-sm text-gray-900 dark:text-gray-100">
+                      <span className="text-sm text-gray-600 ">Currency</span>
+                      <span className="text-sm text-gray-900 ">
                         {selectedAccount.currencyCode}
                       </span>
                     </div>
@@ -667,20 +667,20 @@ export default function AccountsList({ accounts, creditCards, bankAccounts }: Ac
 
                 {/* Balance Information */}
                 <div className="space-y-4">
-                  <h4 className="font-medium text-gray-900 dark:text-gray-100 flex items-center">
+                  <h4 className="font-medium text-gray-900 flex items-center">
                     <DollarSign className="h-4 w-4 mr-2" />
                     Balance Information
                   </h4>
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Current Balance</span>
+                      <span className="text-sm text-gray-600 ">Current Balance</span>
                       <span className={`text-sm font-semibold ${getAccountTypeColor(selectedAccount.type)}`}>
                         {showBalances ? formatCurrency(selectedAccount.currentBalance) : '••••'}
                       </span>
                     </div>
                     {selectedAccount.availableBalance !== null && (
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                        <span className="text-sm text-gray-600 ">
                           {selectedAccount.type === 'credit' ? 'Available Credit' : 'Available Balance'}
                         </span>
                         <span className="text-sm font-semibold text-green-600">
@@ -691,15 +691,15 @@ export default function AccountsList({ accounts, creditCards, bankAccounts }: Ac
                     {selectedAccount.type === 'credit' && (
                       <>
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-600 dark:text-gray-400">Due Date</span>
-                          <span className="text-sm text-gray-900 dark:text-gray-100 flex items-center">
+                          <span className="text-sm text-gray-600 ">Due Date</span>
+                          <span className="text-sm text-gray-900  flex items-center">
                             <Calendar className="h-3 w-3 mr-1" />
                             {formatDate(selectedAccount.dueDate)}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-600 dark:text-gray-400">Minimum Payment</span>
-                          <span className="text-sm text-gray-900 dark:text-gray-100">
+                          <span className="text-sm text-gray-600 ">Minimum Payment</span>
+                          <span className="text-sm text-gray-900 ">
                             {selectedAccount.minimumPayment ? formatCurrency(selectedAccount.minimumPayment) : 'Not set'}
                           </span>
                         </div>
@@ -710,17 +710,17 @@ export default function AccountsList({ accounts, creditCards, bankAccounts }: Ac
               </div>
 
               {/* Account Status */}
-              <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+              <div className="border-t border-gray-200  pt-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Account Status</span>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                  <span className="text-sm text-gray-600 ">Account Status</span>
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800  ">
                     Active
                   </span>
                 </div>
               </div>
 
               {/* Actions */}
-              <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+              <div className="border-t border-gray-200  pt-4">
                 <div className="flex space-x-3">
                   <Button
                     variant="outline"
@@ -752,24 +752,24 @@ export default function AccountsList({ accounts, creditCards, bankAccounts }: Ac
       {/* Delete Confirmation Modal */}
       {showDeleteModal && accountToDelete && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full">
+          <div className="bg-white  rounded-lg max-w-md w-full">
             <div className="p-6">
               <div className="flex items-center space-x-3 mb-4">
-                <div className="w-10 h-10 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center">
-                  <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400" />
+                <div className="w-10 h-10 bg-red-100  rounded-full flex items-center justify-center">
+                  <Trash2 className="h-5 w-5 text-red-600 " />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  <h3 className="text-lg font-semibold text-gray-900 ">
                     Remove Account
                   </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-sm text-gray-600 ">
                     This action cannot be undone
                   </p>
                 </div>
               </div>
               
               <div className="mb-6">
-                <p className="text-gray-700 dark:text-gray-300">
+                <p className="text-gray-700 ">
                   Are you sure you want to remove <span className="font-semibold">"{accountToDelete.name}"</span>? 
                   This will permanently disconnect the account and remove all associated data.
                 </p>

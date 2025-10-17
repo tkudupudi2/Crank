@@ -65,7 +65,7 @@ interface AnalyticsContentProps {
 export default function AnalyticsContent({ accounts, transactions, monthlyTransactions }: AnalyticsContentProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [timePeriod, setTimePeriod] = useState<'1w' | '30d' | '90d' | '1y'>('90d')
+  const [timePeriod, setTimePeriod] = useState<'1w' | '30d' | '90d' | '1y'>('1w')
   const router = useRouter()
   
   // Filter transactions by time period
@@ -126,8 +126,8 @@ export default function AnalyticsContent({ accounts, transactions, monthlyTransa
     })
     .reduce((sum, t) => sum + Math.abs(t.amount), 0)
   
-  // Calculate income (money coming in - only from bank accounts)
-  const totalIncome = transactions
+  // Calculate income (money coming in - only from bank accounts) using filtered transactions
+  const totalIncome = filteredTransactions
     .filter(t => {
       const account = accounts.find(a => a.id === t.accountId)
       if (!account) return false
@@ -463,7 +463,10 @@ export default function AnalyticsContent({ accounts, transactions, monthlyTransa
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{formatCurrency(totalSpending)}</div>
             <p className="text-xs text-muted-foreground">
-              Last 90 days
+              {timePeriod === '1w' ? 'Last 7 days' :
+               timePeriod === '30d' ? 'Last 30 days' :
+               timePeriod === '90d' ? 'Last 90 days' :
+               timePeriod === '1y' ? 'Last year' : 'Last 90 days'}
             </p>
           </CardContent>
         </Card>
@@ -476,7 +479,10 @@ export default function AnalyticsContent({ accounts, transactions, monthlyTransa
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{formatCurrency(totalIncome)}</div>
             <p className="text-xs text-muted-foreground">
-              Last 90 days
+              {timePeriod === '1w' ? 'Last 7 days' :
+               timePeriod === '30d' ? 'Last 30 days' :
+               timePeriod === '90d' ? 'Last 90 days' :
+               timePeriod === '1y' ? 'Last year' : 'Last 90 days'}
             </p>
           </CardContent>
         </Card>
@@ -515,7 +521,7 @@ export default function AnalyticsContent({ accounts, transactions, monthlyTransa
                 </CardDescription>
               </div>
               {/* Time Period Toggle */}
-              <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+              <div className="flex space-x-1 bg-gray-100  rounded-lg p-1">
                 {[
                   { key: '1w', label: '1W' },
                   { key: '30d', label: '30D' },
@@ -590,15 +596,15 @@ export default function AnalyticsContent({ accounts, transactions, monthlyTransa
                       <button
                         key={item.name}
                         onClick={() => handleCategoryClick(item.name)}
-                        className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer text-left w-full"
+                        className="flex items-center justify-between p-3 rounded-lg bg-gray-50  hover:bg-gray-100  transition-colors cursor-pointer text-left w-full"
                       >
                         <div className="flex items-center space-x-3">
                           <div 
                             className="w-3 h-3 rounded-full flex-shrink-0" 
                             style={{ backgroundColor: COLORS[index % COLORS.length] }}
                           />
-                          <div className="w-5 h-5 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center flex-shrink-0">
-                            <Icon className="h-3 w-3 text-gray-600 dark:text-gray-400" />
+                          <div className="w-5 h-5 bg-gray-100  rounded-full flex items-center justify-center flex-shrink-0">
+                            <Icon className="h-3 w-3 text-gray-600 " />
                           </div>
                           <span className="text-sm font-medium truncate">{item.name}</span>
                         </div>
@@ -614,7 +620,7 @@ export default function AnalyticsContent({ accounts, transactions, monthlyTransa
             ) : (
               <div className="text-center py-6">
                 <ShoppingCart className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-500 dark:text-gray-400">No spending data available</p>
+                <p className="text-sm text-gray-500">No spending data available</p>
               </div>
             )}
           </CardContent>
@@ -649,7 +655,7 @@ export default function AnalyticsContent({ accounts, transactions, monthlyTransa
                         </div>
                         <div className="text-right">
                           <p className="font-medium text-sm">{formatCurrency(amount)}</p>
-                          <div className="w-20 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                          <div className="w-20 bg-gray-200  rounded-full h-2">
                             <div 
                               className="bg-primary h-2 rounded-full" 
                               style={{ width: `${Math.min(percentage, 100)}%` }}
@@ -663,7 +669,7 @@ export default function AnalyticsContent({ accounts, transactions, monthlyTransa
               ) : (
                 <div className="text-center py-6">
                   <CreditCard className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-500 dark:text-gray-400">No spending data available</p>
+                  <p className="text-sm text-gray-500">No spending data available</p>
                 </div>
               )}
             </CardContent>
@@ -712,7 +718,7 @@ export default function AnalyticsContent({ accounts, transactions, monthlyTransa
                         <div key={month} className="flex items-center justify-between">
                           <span className="text-sm font-medium w-16">{monthName}</span>
                           <div className="flex-1 mx-4">
-                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                            <div className="w-full bg-gray-200  rounded-full h-3">
                               <div 
                                 className="bg-primary h-3 rounded-full" 
                                 style={{ width: `${percentage}%` }}
@@ -728,7 +734,7 @@ export default function AnalyticsContent({ accounts, transactions, monthlyTransa
               ) : (
                 <div className="text-center py-6">
                   <TrendingUp className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-500 dark:text-gray-400">No spending trend data available</p>
+                  <p className="text-sm text-gray-500">No spending trend data available</p>
                 </div>
               )}
             </CardContent>
@@ -739,16 +745,16 @@ export default function AnalyticsContent({ accounts, transactions, monthlyTransa
       {/* Transaction Details Modal */}
       {isModalOpen && selectedCategory && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
                   {(() => {
                     const Icon = getCategoryIcon(selectedCategory)
-                    return <Icon className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                    return <Icon className="h-4 w-4 text-gray-600" />
                   })()}
                 </div>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                <h2 className="text-xl font-semibold text-gray-900">
                   {selectedCategory} Transactions
                 </h2>
               </div>
@@ -756,7 +762,7 @@ export default function AnalyticsContent({ accounts, transactions, monthlyTransa
                 variant="ghost"
                 size="sm"
                 onClick={() => setIsModalOpen(false)}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                className="text-gray-500 hover:text-gray-700"
               >
                 <X className="h-5 w-5" />
               </Button>
@@ -770,26 +776,26 @@ export default function AnalyticsContent({ accounts, transactions, monthlyTransa
                   return (
                     <div className="text-center py-8">
                       <ShoppingCart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500 dark:text-gray-400">No transactions found in this category</p>
+                      <p className="text-gray-500">No transactions found in this category</p>
                     </div>
                   )
                 }
                 
                 return (
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <span className="font-medium text-gray-900 dark:text-gray-100">
+                    <div className="flex items-center justify-between mb-4 p-3 bg-gray-50 rounded-lg">
+                      <span className="font-medium text-gray-900">
                         Total: {formatCurrency(categoryTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0))}
                       </span>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                      <span className="text-sm text-gray-500">
                         {categoryTransactions.length} transaction{categoryTransactions.length !== 1 ? 's' : ''}
                       </span>
                     </div>
                     
                     {categoryTransactions.map((transaction) => (
-                      <div key={transaction.id} className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                      <div key={transaction.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                         <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                          <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
                             {transaction.amount < 0 ? (
                               <ArrowDownRight className="h-4 w-4 text-red-600" />
                             ) : (
@@ -797,10 +803,10 @@ export default function AnalyticsContent({ accounts, transactions, monthlyTransa
                             )}
                           </div>
                           <div>
-                            <p className="font-medium text-gray-900 dark:text-gray-100">
+                            <p className="font-medium text-gray-900">
                               {transaction.merchantName || transaction.description}
                             </p>
-                            <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
+                            <div className="flex items-center space-x-2 text-sm text-gray-500">
                               <Calendar className="h-3 w-3" />
                               <span>{formatDate(transaction.date)}</span>
                               <span>•</span>
@@ -809,11 +815,11 @@ export default function AnalyticsContent({ accounts, transactions, monthlyTransa
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-medium text-red-600 dark:text-red-400">
+                          <p className="font-medium text-red-600">
                             {formatCurrency(Math.abs(transaction.amount))}
                           </p>
                           {transaction.pending && (
-                            <p className="text-xs text-yellow-600 dark:text-yellow-400">Pending</p>
+                            <p className="text-xs text-yellow-600">Pending</p>
                           )}
                         </div>
                       </div>
