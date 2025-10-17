@@ -24,6 +24,7 @@ model User {
   plaidItems       PlaidItem[]
   syncStatus       SyncStatus?
   userPreferences  UserPreferences?
+  mfaSettings      MfaSettings?
 
   @@map("users")
 }
@@ -167,4 +168,21 @@ model UserPreferences {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_preferences")
+}
+
+model MfaSettings {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  isEnabled         Boolean  @default(false)
+  mfaMethod         String?  // 'sms', 'email', 'totp', 'push'
+  phoneNumber       String?  // For SMS 2FA
+  backupCodes       String[] // Array of backup codes
+  totpSecret        String?  // For TOTP (Time-based One-Time Password)
+  lastUsedAt        DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("mfa_settings")
 }

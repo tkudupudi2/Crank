@@ -19,6 +19,7 @@ import {
   Settings as SettingsIcon,
   Database,
 } from 'lucide-react'
+import MfaSetup from '@/components/auth/MfaSetup'
 
 interface User {
   id: string
@@ -226,6 +227,9 @@ export default function SettingsContent({ user, connectedAccounts, plaidItems }:
           </div>
         </CardContent>
       </Card>
+
+      {/* Two-Factor Authentication */}
+      <MfaSetup />
 
       {/* Connected Accounts */}
       <Card>

@@ -11,6 +11,7 @@ export const authOptions: NextAuthOptions = {
       authorization: {
         params: {
           scope: 'openid email profile',
+          prompt: 'login', // Force fresh login to ensure MFA is checked
         },
       },
       checks: ['pkce'],
