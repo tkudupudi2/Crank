@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     } else {
       // Create new PlaidItem
       console.log(`Creating new PlaidItem for ${institutionName}`)
-      await prisma.plaidItem.create({
+      const newPlaidItem = await prisma.plaidItem.create({
         data: {
           userId: userId,
           plaidItemId: itemId,
@@ -81,6 +81,7 @@ export async function POST(request: NextRequest) {
           institutionName,
         },
       })
+      plaidItemId = newPlaidItem.plaidItemId
     }
 
     // Get accounts
@@ -97,57 +98,230 @@ export async function POST(request: NextRequest) {
       balances: acc.balances,
     })))
 
-    // Skip liabilities fetch since we're not requesting the liabilities product in link token
-    // This prevents errors when connecting accounts from institutions that don't support liabilities
+    // Try to fetch liabilities data for credit cards, mortgages, and student loans
     let liabilitiesData = null
-    console.log('Skipping liabilities fetch - not requested in link token to avoid institution compatibility issues')
+    try {
+      console.log('Fetching liabilities data for liability accounts...')
+      const liabilitiesResponse = await plaidClient.liabilitiesGet({
+        access_token: accessToken,
+      })
+      liabilitiesData = liabilitiesResponse.data.liabilities
+      console.log('Liabilities data fetched successfully')
+      console.log('Available liability accounts:', {
+        credit: liabilitiesData.credit?.map((c: any) => ({ account_id: c.account_id, mask: c.mask })),
+        mortgage: liabilitiesData.mortgage?.map((m: any) => ({ account_id: m.account_id, mask: m.mask })),
+        student: liabilitiesData.student?.map((s: any) => ({ account_id: s.account_id, mask: s.mask }))
+      })
+    } catch (error) {
+      console.log('Liabilities fetch failed (this is expected in sandbox for some institutions):', error instanceof Error ? error.message : 'Unknown error')
+      // Continue without liabilities data - this is normal in sandbox mode
+    }
 
     // Store accounts in database
     let newAccountsCount = 0
     let existingAccountsCount = 0
     
     for (const account of accountsResponse.data.accounts) {
-      // Get liabilities information for this credit card account
+      // Get liabilities information for this account
       let dueDate = null
       let minimumPayment = null
+      let creditLimit = null
+      let lastPaymentAmount = null
+      let lastPaymentDate = null
+      let aprs = null
       
-      if (account.type === 'credit' && liabilitiesData) {
-        const creditLiability = liabilitiesData.credit?.find(
-          (liability: any) => liability.account_id === account.account_id
-        )
-        
-        if (creditLiability) {
-          // Extract due date and minimum payment from liabilities
-          dueDate = creditLiability.next_payment_due_date 
-            ? new Date(creditLiability.next_payment_due_date) 
-            : null
-          minimumPayment = creditLiability.minimum_payment_amount || null
+      // Mortgage-specific fields
+      let originalBalance = null
+      let escrowBalance = null
+      let interestRatePercentage = null
+      let interestRateType = null
+      let originalTerm = null
+      let maturityDate = null
+      let originationDate = null
+      let originationPrincipalAmount = null
+      let principalBalance = null
+      let propertyAddress = null
+      let ytdInterestPaid = null
+      let ytdPrincipalPaid = null
+      
+      // Student loan-specific fields
+      let repaymentPlan = null
+      let sequenceNumber = null
+      let servicerAddress = null
+      
+      if (liabilitiesData) {
+        if (account.type === 'credit') {
+          const creditLiability = liabilitiesData.credit?.find(
+            (liability: any) => liability.account_id === account.account_id
+          )
           
-          console.log(`Credit card liabilities for ${account.name}:`, {
-            dueDate: dueDate,
-            minimumPayment: minimumPayment,
-            apr: creditLiability.aprs,
-            lastPaymentAmount: creditLiability.last_payment_amount,
-            lastPaymentDate: creditLiability.last_payment_date
-          })
+          if (creditLiability) {
+            // Extract credit card liability information
+            dueDate = creditLiability.next_payment_due_date 
+              ? new Date(creditLiability.next_payment_due_date) 
+              : null
+            minimumPayment = creditLiability.minimum_payment_amount || null
+            creditLimit = creditLiability.credit_limit || null
+            lastPaymentAmount = creditLiability.last_payment_amount || null
+            lastPaymentDate = creditLiability.last_payment_date 
+              ? new Date(creditLiability.last_payment_date)
+              : null
+            aprs = creditLiability.aprs || null
+            
+            console.log(`Credit card liabilities for ${account.name}:`, {
+              dueDate: dueDate,
+              minimumPayment: minimumPayment,
+              creditLimit: creditLimit,
+              lastPaymentAmount: lastPaymentAmount,
+              lastPaymentDate: lastPaymentDate,
+              aprs: aprs
+            })
+          } else {
+            console.log(`No liability data found for credit card ${account.name} (${account.account_id})`)
+          }
+        } else if (account.subtype === 'mortgage') {
+          const mortgageLiability = liabilitiesData.mortgage?.find(
+            (liability: any) => liability.account_id === account.account_id
+          )
+          
+          if (mortgageLiability) {
+            // Extract mortgage liability information
+            dueDate = mortgageLiability.next_payment_due_date 
+              ? new Date(mortgageLiability.next_payment_due_date) 
+              : null
+            minimumPayment = mortgageLiability.next_monthly_payment || null
+            lastPaymentAmount = mortgageLiability.last_payment_amount || null
+            lastPaymentDate = mortgageLiability.last_payment_date 
+              ? new Date(mortgageLiability.last_payment_date)
+              : null
+            originalBalance = mortgageLiability.original_balance || null
+            escrowBalance = mortgageLiability.escrow_balance || null
+            interestRatePercentage = mortgageLiability.interest_rate_percentage || null
+            interestRateType = mortgageLiability.interest_rate_type || null
+            originalTerm = mortgageLiability.original_term || null
+            maturityDate = mortgageLiability.maturity_date 
+              ? new Date(mortgageLiability.maturity_date)
+              : null
+            originationDate = mortgageLiability.origination_date 
+              ? new Date(mortgageLiability.origination_date)
+              : null
+            originationPrincipalAmount = mortgageLiability.origination_principal_amount || null
+            principalBalance = mortgageLiability.principal_balance || null
+            propertyAddress = mortgageLiability.property_address || null
+            ytdInterestPaid = mortgageLiability.ytd_interest_paid || null
+            ytdPrincipalPaid = mortgageLiability.ytd_principal_paid || null
+            
+            console.log(`Mortgage liabilities for ${account.name}:`, {
+              dueDate: dueDate,
+              minimumPayment: minimumPayment,
+              lastPaymentAmount: lastPaymentAmount,
+              lastPaymentDate: lastPaymentDate,
+              originalBalance: originalBalance,
+              escrowBalance: escrowBalance,
+              interestRatePercentage: interestRatePercentage,
+              interestRateType: interestRateType,
+              originalTerm: originalTerm,
+              maturityDate: maturityDate,
+              originationDate: originationDate,
+              originationPrincipalAmount: originationPrincipalAmount,
+              principalBalance: principalBalance,
+              propertyAddress: propertyAddress,
+              ytdInterestPaid: ytdInterestPaid,
+              ytdPrincipalPaid: ytdPrincipalPaid
+            })
+          }
+        } else if (account.subtype === 'student') {
+          const studentLiability = liabilitiesData.student?.find(
+            (liability: any) => liability.account_id === account.account_id
+          )
+          
+          if (studentLiability) {
+            // Extract student loan liability information
+            dueDate = studentLiability.next_payment_due_date 
+              ? new Date(studentLiability.next_payment_due_date) 
+              : null
+            minimumPayment = studentLiability.next_monthly_payment || null
+            lastPaymentAmount = studentLiability.last_payment_amount || null
+            lastPaymentDate = studentLiability.last_payment_date 
+              ? new Date(studentLiability.last_payment_date)
+              : null
+            originalBalance = studentLiability.original_balance || null
+            interestRatePercentage = studentLiability.interest_rate_percentage || null
+            interestRateType = studentLiability.interest_rate_type || null
+            repaymentPlan = studentLiability.repayment_plan || null
+            sequenceNumber = studentLiability.sequence_number || null
+            servicerAddress = studentLiability.servicer_address || null
+            ytdInterestPaid = studentLiability.ytd_interest_paid || null
+            ytdPrincipalPaid = studentLiability.ytd_principal_paid || null
+            
+            console.log(`Student loan liabilities for ${account.name}:`, {
+              dueDate: dueDate,
+              minimumPayment: minimumPayment,
+              lastPaymentAmount: lastPaymentAmount,
+              lastPaymentDate: lastPaymentDate,
+              originalBalance: originalBalance,
+              interestRatePercentage: interestRatePercentage,
+              interestRateType: interestRateType,
+              repaymentPlan: repaymentPlan,
+              sequenceNumber: sequenceNumber,
+              servicerAddress: servicerAddress,
+              ytdInterestPaid: ytdInterestPaid,
+              ytdPrincipalPaid: ytdPrincipalPaid
+            })
+          }
         }
       }
 
-      // Check if this specific account already exists
-      const existingAccount = await prisma.account.findUnique({
-        where: { plaidAccountId: account.account_id },
+      // Check if account already exists by institution and mask (more reliable than plaidAccountId)
+      const existingAccount = await prisma.account.findFirst({
+        where: { 
+          userId: userId,
+          institutionId: institutionId,
+          mask: account.mask,
+          type: account.type,
+          subtype: account.subtype
+        },
+      })
+      
+      console.log(`Processing account ${account.name} (${account.account_id}):`, {
+        exists: !!existingAccount,
+        existingAccountId: existingAccount?.id,
+        userId: userId,
+        plaidItemId: plaidItemId
       })
       
       if (existingAccount) {
         // Update existing account
         await prisma.account.update({
-          where: { plaidAccountId: account.account_id },
+          where: { id: existingAccount.id },
           data: {
+            plaidAccountId: account.account_id, // Update to latest plaidAccountId
             currentBalance: account.balances.current,
             availableBalance: account.balances.available,
             isActive: true,
-            dueDate: account.type === 'credit' ? dueDate : undefined,
-            minimumPayment: account.type === 'credit' ? minimumPayment : undefined,
+            dueDate: dueDate,
+            minimumPayment: minimumPayment,
+            creditLimit: account.type === 'credit' ? creditLimit : undefined,
+            lastPaymentAmount: lastPaymentAmount,
+            lastPaymentDate: lastPaymentDate,
+            aprs: account.type === 'credit' ? aprs : undefined,
+            // Mortgage fields
+            originalBalance: account.subtype === 'mortgage' ? originalBalance : undefined,
+            escrowBalance: account.subtype === 'mortgage' ? escrowBalance : undefined,
+            interestRatePercentage: (account.type === 'credit' || account.subtype === 'mortgage' || account.subtype === 'student') ? interestRatePercentage : undefined,
+            interestRateType: (account.type === 'credit' || account.subtype === 'mortgage' || account.subtype === 'student') ? interestRateType : undefined,
+            originalTerm: account.subtype === 'mortgage' ? (originalTerm ? parseInt(originalTerm.toString()) : null) : undefined,
+            maturityDate: account.subtype === 'mortgage' ? maturityDate : undefined,
+            originationDate: account.subtype === 'mortgage' ? originationDate : undefined,
+            originationPrincipalAmount: account.subtype === 'mortgage' ? originationPrincipalAmount : undefined,
+            principalBalance: account.subtype === 'mortgage' ? principalBalance : undefined,
+            propertyAddress: account.subtype === 'mortgage' ? (propertyAddress ? JSON.stringify(propertyAddress) : null) : undefined,
+            ytdInterestPaid: (account.subtype === 'mortgage' || account.subtype === 'student') ? ytdInterestPaid : undefined,
+            ytdPrincipalPaid: (account.subtype === 'mortgage' || account.subtype === 'student') ? ytdPrincipalPaid : undefined,
+            // Student loan fields
+            repaymentPlan: account.subtype === 'student' ? (repaymentPlan ? JSON.stringify(repaymentPlan) : null) : undefined,
+            sequenceNumber: account.subtype === 'student' ? (sequenceNumber ? parseInt(sequenceNumber.toString()) : null) : undefined,
+            servicerAddress: account.subtype === 'student' ? (servicerAddress ? JSON.stringify(servicerAddress) : null) : undefined,
           },
         })
         existingAccountsCount++
@@ -158,7 +332,7 @@ export async function POST(request: NextRequest) {
           data: {
             userId: userId,
             plaidAccountId: account.account_id,
-            plaidItemId: existingItem ? existingItem.plaidItemId : itemId,
+            plaidItemId: plaidItemId,
             institutionId,
             institutionName,
             name: account.name,
@@ -168,8 +342,29 @@ export async function POST(request: NextRequest) {
             currentBalance: account.balances.current,
             availableBalance: account.balances.available,
             currencyCode: account.balances.iso_currency_code || 'USD',
-            dueDate: account.type === 'credit' ? dueDate : undefined,
-            minimumPayment: account.type === 'credit' ? minimumPayment : undefined,
+            dueDate: dueDate,
+            minimumPayment: minimumPayment,
+            creditLimit: account.type === 'credit' ? creditLimit : undefined,
+            lastPaymentAmount: lastPaymentAmount,
+            lastPaymentDate: lastPaymentDate,
+            aprs: account.type === 'credit' ? aprs : undefined,
+            // Mortgage fields
+            originalBalance: account.subtype === 'mortgage' ? originalBalance : undefined,
+            escrowBalance: account.subtype === 'mortgage' ? escrowBalance : undefined,
+            interestRatePercentage: (account.type === 'credit' || account.subtype === 'mortgage' || account.subtype === 'student') ? interestRatePercentage : undefined,
+            interestRateType: (account.type === 'credit' || account.subtype === 'mortgage' || account.subtype === 'student') ? interestRateType : undefined,
+            originalTerm: account.subtype === 'mortgage' ? (originalTerm ? parseInt(originalTerm.toString()) : null) : undefined,
+            maturityDate: account.subtype === 'mortgage' ? maturityDate : undefined,
+            originationDate: account.subtype === 'mortgage' ? originationDate : undefined,
+            originationPrincipalAmount: account.subtype === 'mortgage' ? originationPrincipalAmount : undefined,
+            principalBalance: account.subtype === 'mortgage' ? principalBalance : undefined,
+            propertyAddress: account.subtype === 'mortgage' ? (propertyAddress ? JSON.stringify(propertyAddress) : null) : undefined,
+            ytdInterestPaid: (account.subtype === 'mortgage' || account.subtype === 'student') ? ytdInterestPaid : undefined,
+            ytdPrincipalPaid: (account.subtype === 'mortgage' || account.subtype === 'student') ? ytdPrincipalPaid : undefined,
+            // Student loan fields
+            repaymentPlan: account.subtype === 'student' ? (repaymentPlan ? JSON.stringify(repaymentPlan) : null) : undefined,
+            sequenceNumber: account.subtype === 'student' ? (sequenceNumber ? parseInt(sequenceNumber.toString()) : null) : undefined,
+            servicerAddress: account.subtype === 'student' ? (servicerAddress ? JSON.stringify(servicerAddress) : null) : undefined,
           },
         })
         newAccountsCount++

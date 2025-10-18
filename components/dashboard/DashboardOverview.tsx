@@ -194,11 +194,23 @@ export default function DashboardOverview({
                 <div key={transaction.id} className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                      {transaction.amount > 0 ? (
-                        <ArrowDownRight className="h-4 w-4 text-green-600" />
-                      ) : (
-                        <ArrowUpRight className="h-4 w-4 text-red-600" />
-                      )}
+                      {(() => {
+                        // For credit cards: positive amounts (charges) are red, negative (payments) are green
+                        // For bank accounts: positive amounts (deposits) are green, negative (withdrawals) are red
+                        if (transaction.account.type === 'credit') {
+                          return transaction.amount > 0 ? (
+                            <ArrowDownRight className="h-4 w-4 text-red-600" />
+                          ) : (
+                            <ArrowUpRight className="h-4 w-4 text-green-600" />
+                          )
+                        } else {
+                          return transaction.amount > 0 ? (
+                            <ArrowUpRight className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <ArrowDownRight className="h-4 w-4 text-red-600" />
+                          )
+                        }
+                      })()}
                     </div>
                     <div>
                       <p className="font-medium text-sm">
@@ -211,7 +223,15 @@ export default function DashboardOverview({
                   </div>
                   <div className="text-right">
                     <p className={`font-medium text-sm ${
-                      transaction.amount > 0 ? 'text-green-600' : 'text-red-600'
+                      (() => {
+                        // For credit cards: positive amounts (charges) are red, negative (payments) are green
+                        // For bank accounts: positive amounts (deposits) are green, negative (withdrawals) are red
+                        if (transaction.account.type === 'credit') {
+                          return transaction.amount > 0 ? 'text-red-600' : 'text-green-600'
+                        } else {
+                          return transaction.amount > 0 ? 'text-green-600' : 'text-red-600'
+                        }
+                      })()
                     }`}>
                       {transaction.amount > 0 ? '+' : ''}{formatCurrency(transaction.amount)}
                     </p>

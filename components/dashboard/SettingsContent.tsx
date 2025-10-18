@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import DeleteAccountModal from './DeleteAccountModal'
 import { 
   User, 
   Mail, 
@@ -19,7 +20,6 @@ import {
   Settings as SettingsIcon,
   Database,
 } from 'lucide-react'
-import MfaSetup from '@/components/auth/MfaSetup'
 
 interface User {
   id: string
@@ -58,6 +58,7 @@ export default function SettingsContent({ user, connectedAccounts, plaidItems }:
   const [paymentReminders, setPaymentReminders] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   const handleSaveSettings = async () => {
     setSaving(true)
@@ -228,9 +229,6 @@ export default function SettingsContent({ user, connectedAccounts, plaidItems }:
         </CardContent>
       </Card>
 
-      {/* Two-Factor Authentication */}
-      <MfaSetup />
-
       {/* Connected Accounts */}
       <Card>
         <CardHeader>
@@ -364,7 +362,7 @@ export default function SettingsContent({ user, connectedAccounts, plaidItems }:
                 variant="outline"
                 size="sm"
                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                onClick={() => alert('Account deletion not implemented yet. Please contact support.')}
+                onClick={() => setShowDeleteModal(true)}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete
@@ -385,6 +383,13 @@ export default function SettingsContent({ user, connectedAccounts, plaidItems }:
           {saving ? 'Saving...' : 'Save Settings'}
         </Button>
       </div>
+
+      {/* Delete Account Modal */}
+      <DeleteAccountModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={() => setShowDeleteModal(false)}
+      />
     </div>
   )
 }

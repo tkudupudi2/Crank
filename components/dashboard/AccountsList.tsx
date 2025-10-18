@@ -20,15 +20,44 @@ interface Account {
   currencyCode: string
   dueDate: Date | null
   minimumPayment: number | null
+  // Additional liability fields
+  creditLimit?: number | null
+  lastPaymentAmount?: number | null
+  lastPaymentDate?: string | null
+  aprs?: Array<{
+    apr_percentage: number
+    apr_type: string
+    balance_subject_to_apr: number
+    interest_charge_amount: number
+  }> | null
+  // Mortgage fields
+  originalBalance?: number | null
+  escrowBalance?: number | null
+  interestRatePercentage?: number | null
+  interestRateType?: string | null
+  originalTerm?: number | null
+  maturityDate?: Date | null
+  originationDate?: Date | null
+  originationPrincipalAmount?: number | null
+  principalBalance?: number | null
+  propertyAddress?: any | null
+  ytdInterestPaid?: number | null
+  ytdPrincipalPaid?: number | null
+  // Student loan fields
+  repaymentPlan?: string | null
+  sequenceNumber?: number | null
+  servicerAddress?: any | null
 }
 
 interface AccountsListProps {
   accounts: Account[]
   creditCards: Account[]
   bankAccounts: Account[]
+  mortgages: Account[]
+  studentLoans: Account[]
 }
 
-export default function AccountsList({ accounts, creditCards, bankAccounts }: AccountsListProps) {
+export default function AccountsList({ accounts, creditCards, bankAccounts, mortgages, studentLoans }: AccountsListProps) {
   const [showBalances, setShowBalances] = useState(true)
   const [showConnectMore, setShowConnectMore] = useState(false)
   const [removingAccount, setRemovingAccount] = useState<string | null>(null)
@@ -43,6 +72,7 @@ export default function AccountsList({ accounts, creditCards, bankAccounts }: Ac
   const [accountToDelete, setAccountToDelete] = useState<{ id: string; name: string } | null>(null)
   const [fetchingLiabilities, setFetchingLiabilities] = useState(false)
   const [liabilitiesResult, setLiabilitiesResult] = useState<{ success: boolean; message?: string } | null>(null)
+  const [refreshingLiabilities, setRefreshingLiabilities] = useState(false)
   const [showPaymentForm, setShowPaymentForm] = useState(false)
   const [selectedCreditCard, setSelectedCreditCard] = useState<Account | null>(null)
   const router = useRouter()
@@ -231,6 +261,35 @@ export default function AccountsList({ accounts, creditCards, bankAccounts }: Ac
     }
   }
 
+  const handleRefreshLiabilities = async () => {
+    setRefreshingLiabilities(true)
+    setLiabilitiesResult(null)
+    
+    try {
+      const response = await fetch('/api/accounts/refresh-liabilities', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      const data = await response.json()
+      
+      if (response.ok) {
+        setLiabilitiesResult({ success: true, message: data.message || 'Liability data refreshed successfully' })
+        // Refresh the page to show updated data
+        setTimeout(() => {
+          router.refresh()
+        }, 2000)
+      } else {
+        setLiabilitiesResult({ success: false, message: data.error || 'Failed to refresh liability data' })
+      }
+    } catch (error) {
+      setLiabilitiesResult({ success: false, message: 'Network error while refreshing liability data' })
+    } finally {
+      setRefreshingLiabilities(false)
+    }
+  }
+
   const handlePayCreditCard = (creditCard: Account) => {
     setSelectedCreditCard(creditCard)
     setShowPaymentForm(true)
@@ -267,6 +326,15 @@ export default function AccountsList({ accounts, creditCards, bankAccounts }: Ac
           >
             <Calendar className="h-4 w-4 mr-2" />
             {fetchingLiabilities ? 'Fetching...' : 'Update Credit Card Info'}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefreshLiabilities}
+            disabled={refreshingLiabilities}
+          >
+            <TrendingUp className="h-4 w-4 mr-2" />
+            {refreshingLiabilities ? 'Refreshing...' : 'Refresh Liability Data'}
           </Button>
         </div>
         <div className="flex items-center space-x-4">
@@ -360,11 +428,35 @@ export default function AccountsList({ accounts, creditCards, bankAccounts }: Ac
                           {showBalances ? formatCurrency(account.currentBalance) : '••••'}
                         </span>
                       </div>
+                      {account.creditLimit && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Credit Limit</span>
+                          <span className="font-semibold text-blue-600">
+                            {showBalances ? formatCurrency(account.creditLimit) : '••••'}
+                          </span>
+                        </div>
+                      )}
                       {account.availableBalance !== null && (
                         <div className="flex justify-between items-center">
                           <span className="text-sm text-muted-foreground">Available Credit</span>
                           <span className="font-semibold text-green-600">
                             {showBalances ? formatCurrency(account.availableBalance) : '••••'}
+                          </span>
+                        </div>
+                      )}
+                      {account.lastPaymentAmount && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Last Payment</span>
+                          <span className="font-semibold text-gray-600">
+                            {showBalances ? formatCurrency(account.lastPaymentAmount) : '••••'}
+                          </span>
+                        </div>
+                      )}
+                      {account.lastPaymentDate && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Last Payment Date</span>
+                          <span className="text-sm text-gray-600">
+                            {new Date(account.lastPaymentDate).toLocaleDateString()}
                           </span>
                         </div>
                       )}
@@ -430,6 +522,8 @@ export default function AccountsList({ accounts, creditCards, bankAccounts }: Ac
                               {account.minimumPayment ? formatCurrency(account.minimumPayment) : 'Not set'}
                             </span>
                           </div>
+                          
+                          
                           <Button
                             variant="outline"
                             size="sm"
@@ -539,6 +633,259 @@ export default function AccountsList({ accounts, creditCards, bankAccounts }: Ac
                           <span className="text-sm text-muted-foreground">Available Balance</span>
                           <span className="font-semibold text-green-600">
                             {showBalances ? formatCurrency(account.availableBalance) : '••••'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-4 space-y-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => handleShowAccountInfo(account)}
+                      >
+                        <Info className="h-4 w-4 mr-2" />
+                        Account Info
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                        onClick={() => handleRemoveAccount(account.id, account.name)}
+                        disabled={removingAccount === account.id}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        {removingAccount === account.id ? 'Removing...' : 'Remove Account'}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Mortgages */}
+      {mortgages.length > 0 && (
+        <div>
+          <h2 className="text-xl font-semibold mb-4">Mortgages</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {mortgages.map((account) => {
+              const Icon = Building2
+              return (
+                <Card key={account.id} className="hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-50">
+                        <Icon className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <span className="text-xs text-muted-foreground capitalize">
+                        {account.subtype || account.type}
+                      </span>
+                    </div>
+                    <CardTitle className="text-lg">{account.name}</CardTitle>
+                    <CardDescription className="flex items-center space-x-2">
+                      <span>{account.institutionName}</span>
+                      <span className="font-mono">
+                        {visibleAccountNumbers.has(account.id) 
+                          ? generateFullAccountNumber(account.mask, account.id)
+                          : `•••• ${account.mask}`
+                        }
+                      </span>
+                      <button
+                        onClick={() => toggleAccountNumberVisibility(account.id)}
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                        title={visibleAccountNumbers.has(account.id) ? 'Hide account number' : 'Show full account number'}
+                      >
+                        {visibleAccountNumbers.has(account.id) ? (
+                          <EyeOff className="h-3 w-3" />
+                        ) : (
+                          <EyeIcon className="h-3 w-3" />
+                        )}
+                      </button>
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Current Balance</span>
+                        <span className="font-semibold text-red-600">
+                          {showBalances ? formatCurrency(account.currentBalance) : '••••'}
+                        </span>
+                      </div>
+                      {account.originalBalance && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Original Balance</span>
+                          <span className="font-semibold text-gray-600">
+                            {showBalances ? formatCurrency(account.originalBalance) : '••••'}
+                          </span>
+                        </div>
+                      )}
+                      {account.principalBalance && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Principal Balance</span>
+                          <span className="font-semibold text-blue-600">
+                            {showBalances ? formatCurrency(account.principalBalance) : '••••'}
+                          </span>
+                        </div>
+                      )}
+                      {account.escrowBalance && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Escrow Balance</span>
+                          <span className="font-semibold text-green-600">
+                            {showBalances ? formatCurrency(account.escrowBalance) : '••••'}
+                          </span>
+                        </div>
+                      )}
+                      {account.interestRatePercentage && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Interest Rate</span>
+                          <span className="font-semibold text-blue-600">
+                            {account.interestRatePercentage}%
+                          </span>
+                        </div>
+                      )}
+                      {account.minimumPayment && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Monthly Payment</span>
+                          <span className="font-semibold text-gray-600">
+                            {showBalances ? formatCurrency(account.minimumPayment) : '••••'}
+                          </span>
+                        </div>
+                      )}
+                      {account.dueDate && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Next Payment Due</span>
+                          <span className="text-sm text-gray-600">
+                            {formatDate(account.dueDate)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-4 space-y-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => handleShowAccountInfo(account)}
+                      >
+                        <Info className="h-4 w-4 mr-2" />
+                        Account Info
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                        onClick={() => handleRemoveAccount(account.id, account.name)}
+                        disabled={removingAccount === account.id}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        {removingAccount === account.id ? 'Removing...' : 'Remove Account'}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Student Loans */}
+      {studentLoans.length > 0 && (
+        <div>
+          <h2 className="text-xl font-semibold mb-4">Student Loans</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {studentLoans.map((account) => {
+              const Icon = Building2
+              return (
+                <Card key={account.id} className="hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center bg-purple-50">
+                        <Icon className="h-5 w-5 text-purple-600" />
+                      </div>
+                      <span className="text-xs text-muted-foreground capitalize">
+                        {account.subtype || account.type}
+                      </span>
+                    </div>
+                    <CardTitle className="text-lg">{account.name}</CardTitle>
+                    <CardDescription className="flex items-center space-x-2">
+                      <span>{account.institutionName}</span>
+                      <span className="font-mono">
+                        {visibleAccountNumbers.has(account.id) 
+                          ? generateFullAccountNumber(account.mask, account.id)
+                          : `•••• ${account.mask}`
+                        }
+                      </span>
+                      <button
+                        onClick={() => toggleAccountNumberVisibility(account.id)}
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                        title={visibleAccountNumbers.has(account.id) ? 'Hide account number' : 'Show full account number'}
+                      >
+                        {visibleAccountNumbers.has(account.id) ? (
+                          <EyeOff className="h-3 w-3" />
+                        ) : (
+                          <EyeIcon className="h-3 w-3" />
+                        )}
+                      </button>
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Current Balance</span>
+                        <span className="font-semibold text-red-600">
+                          {showBalances ? formatCurrency(account.currentBalance) : '••••'}
+                        </span>
+                      </div>
+                      {account.originalBalance && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Original Balance</span>
+                          <span className="font-semibold text-gray-600">
+                            {showBalances ? formatCurrency(account.originalBalance) : '••••'}
+                          </span>
+                        </div>
+                      )}
+                      {account.interestRatePercentage && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Interest Rate</span>
+                          <span className="font-semibold text-blue-600">
+                            {account.interestRatePercentage}%
+                          </span>
+                        </div>
+                      )}
+                    {account.repaymentPlan && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Repayment Plan</span>
+                        <span className="text-sm text-gray-600 capitalize">
+                          {(() => {
+                            try {
+                              const plan = typeof account.repaymentPlan === 'string' 
+                                ? JSON.parse(account.repaymentPlan) 
+                                : account.repaymentPlan
+                              return plan.description || plan.type || account.repaymentPlan.replace(/_/g, ' ')
+                            } catch {
+                              return account.repaymentPlan.replace(/_/g, ' ')
+                            }
+                          })()}
+                        </span>
+                      </div>
+                    )}
+                      {account.minimumPayment && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Monthly Payment</span>
+                          <span className="font-semibold text-gray-600">
+                            {showBalances ? formatCurrency(account.minimumPayment) : '••••'}
+                          </span>
+                        </div>
+                      )}
+                      {account.dueDate && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Next Payment Due</span>
+                          <span className="text-sm text-gray-600">
+                            {formatDate(account.dueDate)}
                           </span>
                         </div>
                       )}
@@ -708,6 +1055,205 @@ export default function AccountsList({ accounts, creditCards, bankAccounts }: Ac
                   </div>
                 </div>
               </div>
+
+              {/* Interest Rates Section - Only for Credit Cards */}
+              {selectedAccount.type === 'credit' && selectedAccount.aprs && selectedAccount.aprs.length > 0 && (
+                <div className="border-t border-gray-200 pt-4">
+                  <h4 className="font-medium text-gray-900 flex items-center mb-4">
+                    <TrendingUp className="h-4 w-4 mr-2" />
+                    Interest Rates (APR)
+                  </h4>
+                  <div className="space-y-3">
+                    {selectedAccount.aprs.map((apr, index) => (
+                      <div key={index} className="bg-gray-50 rounded-lg p-4">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="font-medium text-sm capitalize">
+                            {apr.apr_type.replace(/_/g, ' ').replace('apr', '').replace(/\b\w/g, l => l.toUpperCase())}
+                          </span>
+                          <span className="font-bold text-lg text-blue-600">
+                            {apr.apr_percentage}%
+                          </span>
+                        </div>
+                        {apr.balance_subject_to_apr > 0 && (
+                          <div className="text-xs text-gray-600 mb-1">
+                            Balance Subject to APR: {formatCurrency(apr.balance_subject_to_apr)}
+                          </div>
+                        )}
+                        {apr.interest_charge_amount > 0 && (
+                          <div className="text-xs text-gray-600">
+                            Interest Charge: {formatCurrency(apr.interest_charge_amount)}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Mortgage-specific information */}
+              {selectedAccount.subtype === 'mortgage' && (
+                <div className="border-t border-gray-200 pt-4">
+                  <h4 className="font-medium text-gray-900 flex items-center mb-4">
+                    <Building2 className="h-4 w-4 mr-2" />
+                    Mortgage Details
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {selectedAccount.originalBalance && (
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <div className="text-sm text-gray-600 mb-1">Original Loan Amount</div>
+                        <div className="font-semibold text-lg">{formatCurrency(selectedAccount.originalBalance)}</div>
+                      </div>
+                    )}
+                    {selectedAccount.principalBalance && (
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <div className="text-sm text-gray-600 mb-1">Principal Balance</div>
+                        <div className="font-semibold text-lg">{formatCurrency(selectedAccount.principalBalance)}</div>
+                      </div>
+                    )}
+                    {selectedAccount.escrowBalance && (
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <div className="text-sm text-gray-600 mb-1">Escrow Balance</div>
+                        <div className="font-semibold text-lg">{formatCurrency(selectedAccount.escrowBalance)}</div>
+                      </div>
+                    )}
+                    {selectedAccount.interestRatePercentage && (
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <div className="text-sm text-gray-600 mb-1">Interest Rate</div>
+                        <div className="font-semibold text-lg">{selectedAccount.interestRatePercentage}%</div>
+                        {selectedAccount.interestRateType && (
+                          <div className="text-xs text-gray-500 capitalize">{selectedAccount.interestRateType}</div>
+                        )}
+                      </div>
+                    )}
+                    {selectedAccount.originalTerm && (
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <div className="text-sm text-gray-600 mb-1">Original Term</div>
+                        <div className="font-semibold text-lg">{selectedAccount.originalTerm} months</div>
+                      </div>
+                    )}
+                    {selectedAccount.maturityDate && (
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <div className="text-sm text-gray-600 mb-1">Maturity Date</div>
+                        <div className="font-semibold text-lg">{formatDate(selectedAccount.maturityDate)}</div>
+                      </div>
+                    )}
+                    {selectedAccount.originationDate && (
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <div className="text-sm text-gray-600 mb-1">Origination Date</div>
+                        <div className="font-semibold text-lg">{formatDate(selectedAccount.originationDate)}</div>
+                      </div>
+                    )}
+                    {selectedAccount.ytdInterestPaid && (
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <div className="text-sm text-gray-600 mb-1">YTD Interest Paid</div>
+                        <div className="font-semibold text-lg">{formatCurrency(selectedAccount.ytdInterestPaid)}</div>
+                      </div>
+                    )}
+                    {selectedAccount.ytdPrincipalPaid && (
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <div className="text-sm text-gray-600 mb-1">YTD Principal Paid</div>
+                        <div className="font-semibold text-lg">{formatCurrency(selectedAccount.ytdPrincipalPaid)}</div>
+                      </div>
+                    )}
+                  </div>
+        {selectedAccount.propertyAddress && (
+          <div className="mt-4 bg-gray-50 rounded-lg p-4">
+            <div className="text-sm text-gray-600 mb-2">Property Address</div>
+            <div className="text-sm">
+              {(() => {
+                try {
+                  const address = typeof selectedAccount.propertyAddress === 'string' 
+                    ? JSON.parse(selectedAccount.propertyAddress) 
+                    : selectedAccount.propertyAddress
+                  return Object.values(address).filter(Boolean).join(', ')
+                } catch {
+                  return selectedAccount.propertyAddress
+                }
+              })()}
+            </div>
+          </div>
+        )}
+                </div>
+              )}
+
+              {/* Student loan-specific information */}
+              {selectedAccount.subtype === 'student' && (
+                <div className="border-t border-gray-200 pt-4">
+                  <h4 className="font-medium text-gray-900 flex items-center mb-4">
+                    <Building2 className="h-4 w-4 mr-2" />
+                    Student Loan Details
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {selectedAccount.originalBalance && (
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <div className="text-sm text-gray-600 mb-1">Original Loan Amount</div>
+                        <div className="font-semibold text-lg">{formatCurrency(selectedAccount.originalBalance)}</div>
+                      </div>
+                    )}
+                    {selectedAccount.interestRatePercentage && (
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <div className="text-sm text-gray-600 mb-1">Interest Rate</div>
+                        <div className="font-semibold text-lg">{selectedAccount.interestRatePercentage}%</div>
+                        {selectedAccount.interestRateType && (
+                          <div className="text-xs text-gray-500 capitalize">{selectedAccount.interestRateType}</div>
+                        )}
+                      </div>
+                    )}
+          {selectedAccount.repaymentPlan && (
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="text-sm text-gray-600 mb-1">Repayment Plan</div>
+              <div className="font-semibold text-lg capitalize">
+                {(() => {
+                  try {
+                    const plan = typeof selectedAccount.repaymentPlan === 'string' 
+                      ? JSON.parse(selectedAccount.repaymentPlan) 
+                      : selectedAccount.repaymentPlan
+                    return plan.description || plan.type || selectedAccount.repaymentPlan.replace(/_/g, ' ')
+                  } catch {
+                    return selectedAccount.repaymentPlan.replace(/_/g, ' ')
+                  }
+                })()}
+              </div>
+            </div>
+          )}
+                    {selectedAccount.sequenceNumber && (
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <div className="text-sm text-gray-600 mb-1">Sequence Number</div>
+                        <div className="font-semibold text-lg">{selectedAccount.sequenceNumber}</div>
+                      </div>
+                    )}
+                    {selectedAccount.ytdInterestPaid && (
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <div className="text-sm text-gray-600 mb-1">YTD Interest Paid</div>
+                        <div className="font-semibold text-lg">{formatCurrency(selectedAccount.ytdInterestPaid)}</div>
+                      </div>
+                    )}
+                    {selectedAccount.ytdPrincipalPaid && (
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <div className="text-sm text-gray-600 mb-1">YTD Principal Paid</div>
+                        <div className="font-semibold text-lg">{formatCurrency(selectedAccount.ytdPrincipalPaid)}</div>
+                      </div>
+                    )}
+                  </div>
+        {selectedAccount.servicerAddress && (
+          <div className="mt-4 bg-gray-50 rounded-lg p-4">
+            <div className="text-sm text-gray-600 mb-2">Servicer Address</div>
+            <div className="text-sm">
+              {(() => {
+                try {
+                  const address = typeof selectedAccount.servicerAddress === 'string' 
+                    ? JSON.parse(selectedAccount.servicerAddress) 
+                    : selectedAccount.servicerAddress
+                  return Object.values(address).filter(Boolean).join(', ')
+                } catch {
+                  return selectedAccount.servicerAddress
+                }
+              })()}
+            </div>
+          </div>
+        )}
+                </div>
+              )}
 
               {/* Account Status */}
               <div className="border-t border-gray-200  pt-4">

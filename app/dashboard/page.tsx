@@ -15,11 +15,10 @@ export default async function DashboardPage() {
 
   const userId = (session?.user as any)?.id
 
-  // Get user's accounts (limit to 5 for dashboard display)
-  const accounts = await prisma.account.findMany({
+  // Get all user's accounts for accurate counts
+  const allAccounts = await prisma.account.findMany({
     where: { userId: userId, isActive: true },
     orderBy: { createdAt: 'desc' },
-    take: 5,
   })
 
   // Get recent transactions (limit to 6 for dashboard display)
@@ -43,8 +42,11 @@ export default async function DashboardPage() {
   })
 
   // Calculate net worth (assets minus debts)
-  const bankAccounts = accounts.filter((account: any) => account.type === 'depository')
-  const creditCards = accounts.filter((account: any) => account.type === 'credit')
+  const bankAccounts = allAccounts.filter((account: any) => account.type === 'depository')
+  const creditCards = allAccounts.filter((account: any) => account.type === 'credit')
+  
+  // Limit accounts for display (first 5)
+  const accounts = allAccounts.slice(0, 5)
   
   const bankAccountBalance = bankAccounts.reduce((sum: number, account: any) => {
     return sum + (account.currentBalance || 0)
@@ -79,7 +81,7 @@ export default async function DashboardPage() {
           {allTransactions.length > 0 && (
             <AnalyticsBlurb 
               transactions={allTransactions}
-              accounts={accounts}
+              accounts={allAccounts}
             />
           )}
         </>

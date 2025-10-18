@@ -7,13 +7,15 @@ import AnalyticsContent from '@/components/dashboard/AnalyticsContent'
 export default async function AnalyticsPage() {
   const session = await getServerSession(authOptions)
 
-  if (!session?.user?.id) {
+  if (!(session?.user as any)?.id) {
     redirect('/auth/signin')
   }
 
+  const userId = (session?.user as any)?.id
+
   // Get user's accounts
   const accounts = await prisma.account.findMany({
-    where: { userId: session.user.id, isActive: true },
+    where: { userId: userId, isActive: true },
     orderBy: { createdAt: 'desc' },
   })
 
@@ -24,7 +26,7 @@ export default async function AnalyticsPage() {
 
   const transactions = await prisma.transaction.findMany({
     where: { 
-      userId: session.user.id,
+      userId: userId,
       date: {
         gte: startDate,
         lte: endDate,
@@ -37,7 +39,7 @@ export default async function AnalyticsPage() {
   // Get monthly transaction data for trends (extend to include more months)
   const monthlyTransactions = await prisma.transaction.findMany({
     where: { 
-      userId: session.user.id,
+      userId: userId,
       date: {
         gte: new Date(new Date().getFullYear(), new Date().getMonth() - 12, 1), // Last 12 months to ensure we get October 2025
       }

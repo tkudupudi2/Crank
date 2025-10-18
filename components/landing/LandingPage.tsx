@@ -5,64 +5,181 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import { CreditCard, Shield, TrendingUp, Users, DollarSign, PieChart, Cog, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
+import { useEffect, useRef, useState, useCallback } from 'react'
 
 export default function LandingPage() {
+  const [activeSection, setActiveSection] = useState(0)
+  const sectionRefs = useRef<(HTMLElement | null)[]>([])
+  const containerRef = useRef<HTMLDivElement>(null)
+
   const handleSignIn = () => {
     signIn('auth0', { callbackUrl: '/dashboard' })
   }
 
+  const scrollToSection = useCallback((index: number, smooth: boolean = true) => {
+    const section = sectionRefs.current[index]
+    if (section) {
+      section.scrollIntoView({ 
+        behavior: smooth ? 'smooth' : 'instant',
+        block: 'start'
+      })
+    }
+  }, [])
+
+  // Using normal scrolling - no resistance
+
+  // Update active section based on scroll position
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY
+      const windowHeight = window.innerHeight
+      
+      sectionRefs.current.forEach((section, index) => {
+        if (section) {
+          const rect = section.getBoundingClientRect()
+          const sectionTop = rect.top + scrollY
+          const sectionBottom = sectionTop + rect.height
+          
+          // Check if section is in view
+          if (scrollY >= sectionTop - windowHeight / 2 && scrollY < sectionBottom - windowHeight / 2) {
+            setActiveSection(index)
+          }
+        }
+      })
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50" ref={containerRef}>
       {/* Navigation */}
-      <nav className="flex items-center justify-between p-6 bg-white/80 backdrop-blur-md fixed w-full top-0 z-50">
+      <nav className="flex items-center justify-between p-6 bg-white/90 backdrop-blur-md fixed w-full top-0 z-50 border-b border-blue-100/50">
         <div className="flex items-center space-x-2 text-2xl font-bold text-gray-900">
-          <Cog className="h-8 w-8 text-black" />
+          <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center relative overflow-hidden">
+            {/* Unique geometric pattern */}
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-purple-400 opacity-20"></div>
+            <svg
+              className="w-5 h-5 text-white relative z-10"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              {/* Simple cogwheel design */}
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
+          </div>
           <span>Crank</span>
         </div>
         <div className="space-x-4">
-          <Button variant="ghost" onClick={handleSignIn}>Sign In</Button>
+          <Button 
+            variant="ghost" 
+            onClick={handleSignIn}
+            className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 hover:text-blue-600 transition-all duration-300 hover:scale-105"
+          >
+            Sign In
+          </Button>
           <Link href="/auth/signup">
-            <Button>Get Started</Button>
+            <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl">
+              Get Started
+            </Button>
           </Link>
         </div>
       </nav>
 
+      {/* Section Navigation Indicator */}
+      <div className="fixed right-8 top-1/2 transform -translate-y-1/2 z-40 space-y-3">
+        {[
+          { name: 'Hero', icon: '🏠' },
+          { name: 'Credit Cards', icon: '💳' },
+          { name: 'Bank Accounts', icon: '🏦' },
+          { name: 'Analytics', icon: '📊' },
+          { name: 'Budget', icon: '💰' },
+          { name: 'Security', icon: '🔒' }
+        ].map((section, index) => (
+          <button
+            key={index}
+            onClick={() => {
+              setActiveSection(index)
+              scrollToSection(index, true)
+            }}
+            className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300 ${
+              activeSection === index
+                ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white scale-110 shadow-lg'
+                : 'bg-white/90 text-gray-600 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 hover:text-blue-600 hover:scale-105'
+            }`}
+            title={section.name}
+          >
+            {section.icon}
+          </button>
+        ))}
+      </div>
+
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-6 text-center">
+      <section 
+        ref={(el) => (sectionRefs.current[0] = el)}
+        className="scroll-section min-h-screen flex items-center justify-center pt-32 pb-20 px-6 text-center"
+      >
         <div className="max-w-4xl mx-auto">
           <div className="flex justify-center mb-8">
-            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center">
+            <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center shadow-lg">
               <Cog className="h-16 w-16 text-black animate-spin" style={{ animationDuration: '3s' }} />
             </div>
           </div>
-          <h1 className="text-6xl font-bold text-gray-900 mb-8 leading-tight">
-            Manage All Your Finances<br />in One Place
-          </h1>
-          <p className="text-2xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
-            Connect your credit cards and bank accounts to track spending, manage payments, 
-            and gain insights into your financial health.
-          </p>
+        <h1 className="text-5xl font-bold text-black mb-6 leading-[0.9] tracking-tight">
+          <span className="block">Manage All Your</span>
+          <span className="block">Finances in</span>
+          <span className="block bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">One Place</span>
+        </h1>
+        <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto leading-[1.4] tracking-tight">
+          Connect your credit cards and bank accounts to track spending, manage payments, 
+          and gain insights into your financial health.
+        </p>
           <div className="space-x-6">
             <Link href="/auth/signup">
-              <Button size="lg" className="text-xl px-12 py-4 bg-blue-600 hover:bg-blue-700">
-                Get Started
-                <ArrowRight className="ml-2 h-5 w-5" />
+              <Button 
+                size="lg" 
+                className="text-xl px-12 py-4 bg-white text-gray-900 border-2 border-gray-200 hover:border-transparent transition-all duration-500 shadow-lg hover:shadow-xl relative overflow-hidden group"
+              >
+                <span className="relative z-10 flex items-center group-hover:text-white transition-colors duration-300">
+                  Get Started
+                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
+                </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
               </Button>
             </Link>
             <Button 
               variant="outline" 
               size="lg" 
-              className="text-xl px-12 py-4 border-2"
+              className="text-xl px-12 py-4 border-2 border-gray-200 bg-white text-gray-900 hover:border-transparent transition-all duration-500 shadow-lg hover:shadow-xl relative overflow-hidden group"
               onClick={handleSignIn}
             >
-              Sign In
+              <span className="relative z-10 group-hover:text-white transition-colors duration-300">
+                Sign In
+              </span>
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
             </Button>
           </div>
         </div>
       </section>
 
       {/* Credit Card Management */}
-      <section className="py-32 px-6 bg-gray-50">
+      <section 
+        ref={(el) => (sectionRefs.current[1] = el)}
+        className="scroll-section min-h-screen flex items-center py-32 px-6 bg-gradient-to-br from-blue-50/30 to-purple-50/30"
+      >
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-20 items-center">
             <div>
@@ -144,7 +261,10 @@ export default function LandingPage() {
       </section>
 
       {/* Bank Account Integration */}
-      <section className="py-32 px-6">
+      <section 
+        ref={(el) => (sectionRefs.current[2] = el)}
+        className="scroll-section min-h-screen flex items-center py-32 px-6 bg-gradient-to-br from-purple-50/30 to-blue-50/30"
+      >
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-20 items-center">
             <div className="order-2 lg:order-1">
@@ -228,7 +348,10 @@ export default function LandingPage() {
       </section>
 
       {/* Spending Analytics */}
-      <section className="py-32 px-6 bg-gray-50">
+      <section 
+        ref={(el) => (sectionRefs.current[3] = el)}
+        className="scroll-section min-h-screen flex items-center py-32 px-6 bg-gradient-to-br from-purple-50/30 to-blue-50/30"
+      >
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-20 items-center">
             <div>
@@ -317,7 +440,10 @@ export default function LandingPage() {
       </section>
 
       {/* Budget Tracking */}
-      <section className="py-32 px-6">
+      <section 
+        ref={(el) => (sectionRefs.current[4] = el)}
+        className="scroll-section min-h-screen flex items-center py-32 px-6 bg-gradient-to-br from-blue-50/30 to-purple-50/30"
+      >
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-20 items-center">
             <div className="order-2 lg:order-1">
@@ -397,7 +523,10 @@ export default function LandingPage() {
       </section>
 
       {/* Security */}
-      <section className="py-32 px-6 bg-gray-50">
+      <section 
+        ref={(el) => (sectionRefs.current[5] = el)}
+        className="scroll-section min-h-screen flex items-center py-32 px-6 bg-gradient-to-br from-purple-50/30 to-blue-50/30"
+      >
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-20 items-center">
             <div>
@@ -487,16 +616,19 @@ export default function LandingPage() {
 
 
       {/* Final CTA */}
-      <section className="py-32 px-6 bg-gray-900 text-white">
+      <section className="no-snap py-32 px-6 bg-gradient-to-br from-blue-900 via-purple-900 to-blue-900 text-white">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-5xl font-bold mb-8">
+          <h2 className="text-5xl font-bold mb-8 bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-transparent">
             Ready to Take Control of Your Finances?
           </h2>
-          <p className="text-2xl text-gray-300 mb-12 leading-relaxed">
+          <p className="text-2xl text-blue-100 mb-12 leading-relaxed">
             Join thousands of users who have simplified their financial management with Crank.
           </p>
           <Link href="/auth/signup">
-            <Button size="lg" className="text-xl px-16 py-6 bg-blue-600 hover:bg-blue-700">
+            <Button 
+              size="lg" 
+              className="text-xl px-16 py-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 hover:scale-105 transition-all duration-300 shadow-2xl hover:shadow-3xl"
+            >
               Get Started Now
               <ArrowRight className="ml-3 h-6 w-6" />
             </Button>
@@ -505,13 +637,72 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="px-6 py-16 border-t bg-white">
-        <div className="max-w-6xl mx-auto text-center text-gray-600">
-          <div className="flex items-center justify-center space-x-2 text-2xl font-bold text-gray-900 mb-4">
-            <Cog className="h-8 w-8 text-black" />
-            <span>Crank</span>
+      <footer className="no-snap px-6 py-16 border-t border-blue-100/50 bg-gradient-to-br from-blue-50/50 to-purple-50/50">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-4 gap-8 mb-8">
+            <div className="text-center md:text-left">
+              <div className="flex items-center justify-center md:justify-start space-x-2 text-2xl font-bold text-gray-900 mb-4">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center relative overflow-hidden">
+                  {/* Unique geometric pattern */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-purple-400 opacity-20"></div>
+                  <svg
+                    className="w-5 h-5 text-white relative z-10"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    {/* Simple cogwheel design */}
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                </div>
+                <span>Crank</span>
+              </div>
+              <p className="text-gray-600 mb-4">
+                Simplify your financial life with our all-in-one personal finance platform.
+              </p>
+            </div>
+            <div className="text-center md:text-left">
+              <h3 className="font-semibold text-gray-900 mb-4">Product</h3>
+              <ul className="space-y-2 text-gray-600">
+                <li><Link href="/dashboard" className="hover:text-blue-600">Dashboard</Link></li>
+                <li><Link href="/dashboard/transactions" className="hover:text-blue-600">Transactions</Link></li>
+                <li><Link href="/dashboard/budget" className="hover:text-blue-600">Budget</Link></li>
+                <li><Link href="/dashboard/analytics" className="hover:text-blue-600">Analytics</Link></li>
+              </ul>
+            </div>
+            <div className="text-center md:text-left">
+              <h3 className="font-semibold text-gray-900 mb-4">Company</h3>
+              <ul className="space-y-2 text-gray-600">
+                <li><Link href="/about" className="hover:text-blue-600">About Us</Link></li>
+                <li><Link href="/contact" className="hover:text-blue-600">Contact</Link></li>
+                <li><a href="#" className="hover:text-blue-600">Careers</a></li>
+                <li><a href="#" className="hover:text-blue-600">Press</a></li>
+              </ul>
+            </div>
+            <div className="text-center md:text-left">
+              <h3 className="font-semibold text-gray-900 mb-4">Support</h3>
+              <ul className="space-y-2 text-gray-600">
+                <li><a href="#" className="hover:text-blue-600">Help Center</a></li>
+                <li><a href="#" className="hover:text-blue-600">Privacy Policy</a></li>
+                <li><a href="#" className="hover:text-blue-600">Terms of Service</a></li>
+                <li><a href="#" className="hover:text-blue-600">Security</a></li>
+              </ul>
+            </div>
           </div>
-          <p>&copy; 2024 Crank. All rights reserved.</p>
+          <div className="border-t pt-8 text-center text-gray-600">
+            <p>&copy; 2024 Crank. All rights reserved.</p>
+          </div>
         </div>
       </footer>
     </div>

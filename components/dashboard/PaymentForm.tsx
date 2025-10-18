@@ -118,6 +118,7 @@ export default function PaymentForm({ creditCard, onClose, onSuccess }: PaymentF
     setIsSubmitting(true)
 
     try {
+      // Create payment using mock payment system (since Payment Initiation requires production access)
       const response = await fetch('/api/payments/create', {
         method: 'POST',
         headers: {

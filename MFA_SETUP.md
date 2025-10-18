@@ -1,124 +1,68 @@
 # Two-Factor Authentication (2FA) Setup Guide
 
-This guide explains how to set up and configure Two-Factor Authentication (2FA) for the Crank Finance application using Auth0 and custom MFA components.
+This guide explains how to set up and configure Two-Factor Authentication (2FA) for the Crank Finance application using Auth0's built-in MFA system.
 
 ## Overview
 
-The application supports two types of 2FA:
-1. **TOTP (Time-based One-Time Password)** - Using authenticator apps like Google Authenticator, Authy, or Microsoft Authenticator
-2. **SMS** - Using text messages for verification codes
+The application uses Auth0's built-in Multi-Factor Authentication system, which provides:
+
+1. **Email-based MFA** - Verification codes sent via email
+2. **SMS MFA** - Text message verification (optional)
+3. **TOTP MFA** - Authenticator app support (optional)
+4. **Automatic enforcement** - All users must complete MFA during login
 
 ## Features
 
-- ✅ TOTP support with QR code generation
-- ✅ SMS-based 2FA
-- ✅ Backup codes for account recovery
-- ✅ MFA status tracking in database
-- ✅ Secure secret generation and storage
-- ✅ User-friendly setup interface
+- ✅ Email-based MFA (primary method)
+- ✅ Auth0-managed security
+- ✅ Automatic MFA enforcement
+- ✅ Enterprise-grade security
+- ✅ No custom database storage needed
+- ✅ Seamless user experience
 
-## Database Schema
+## How It Works
 
-The MFA functionality uses a new `MfaSettings` table:
+The MFA system is entirely managed by Auth0:
 
-```sql
-model MfaSettings {
-  id                String   @id @default(cuid())
-  userId            String   @unique
-  isEnabled         Boolean  @default(false)
-  mfaMethod         String?  // 'sms', 'email', 'totp', 'push'
-  phoneNumber       String?  // For SMS 2FA
-  backupCodes       String[] // Array of backup codes
-  totpSecret        String?  // For TOTP (Time-based One-Time Password)
-  lastUsedAt        DateTime?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+1. **User attempts to sign in** → Redirected to Auth0 Universal Login
+2. **User enters credentials** → Auth0 validates username/password
+3. **Auth0 sends verification code** → User receives email with code
+4. **User enters verification code** → Auth0 validates and completes login
+5. **User is redirected to app** → Access granted with MFA completed
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-```
+## Auth0 Integration
 
-## API Endpoints
+The application integrates with Auth0's MFA system through:
 
-### GET /api/mfa
-Retrieves the current user's MFA settings.
-
-**Response:**
-```json
-{
-  "isEnabled": true,
-  "mfaMethod": "totp",
-  "hasBackupCodes": true,
-  "phoneNumber": "+1-***-1234"
-}
-```
-
-### POST /api/mfa
-Manages MFA settings (enable/disable/verify).
-
-**Enable TOTP:**
-```json
-{
-  "action": "enable",
-  "mfaMethod": "totp"
-}
-```
-
-**Enable SMS:**
-```json
-{
-  "action": "enable",
-  "mfaMethod": "sms",
-  "phoneNumber": "+1234567890"
-}
-```
-
-**Verify TOTP:**
-```json
-{
-  "action": "verify_totp",
-  "totpCode": "123456"
-}
-```
-
-**Disable MFA:**
-```json
-{
-  "action": "disable"
-}
-```
-
-## Components
-
-### MfaSetup Component
-Located at `components/auth/MfaSetup.tsx`, this component provides:
-
-- MFA method selection (TOTP or SMS)
-- QR code generation for TOTP setup
-- Backup code generation and display
-- MFA status management
-- User-friendly setup flow
+- **Universal Login** - Auth0's secure login page
+- **MFA Enforcement** - Automatic MFA requirement
+- **Email Verification** - Primary MFA method
+- **Session Management** - Secure token handling
 
 ## Setup Instructions
 
-### 1. Install Dependencies
-```bash
-npm install otplib qrcode @types/qrcode
-```
+### 1. Auth0 Dashboard Configuration
+1. **Go to Auth0 Dashboard** → **Security** → **Multi-factor Authentication**
+2. **Enable Email MFA**:
+   - Toggle "Email" to ON
+   - Configure email templates if needed
+3. **Test with a user account** to ensure it works
 
-### 2. Database Migration
-```bash
-npx prisma generate
-npx prisma db push
-```
+### 2. Deploy Auth0 Action (Optional but Recommended)
+1. **Go to Auth0 Dashboard** → **Actions** → **Flows**
+2. **Select "Login" flow**
+3. **Create a new Action** using the code from `auth0-actions/enforce-mfa.js`
+4. **Deploy the Action** and add it to the Login flow
 
 ### 3. Environment Variables
-Add these to your `.env.local`:
+Ensure these are set in your `.env.local`:
 
 ```env
-# Auth0 MFA Configuration (Optional - for enhanced security)
-AUTH0_MFA_ENABLED=true
-AUTH0_MFA_PROVIDER=guardian
+AUTH0_CLIENT_ID=your_auth0_client_id
+AUTH0_CLIENT_SECRET=your_auth0_client_secret
+AUTH0_ISSUER_BASE_URL=https://your-domain.auth0.com
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your_nextauth_secret
 ```
 
 ### 4. Auth0 Configuration
@@ -134,6 +78,39 @@ AUTH0_MFA_PROVIDER=guardian
 1. Go to Auth0 Dashboard → Security → Multi-factor Authentication
 2. Enable "Auth0 Guardian"
 3. Configure your preferred MFA methods
+
+#### Configure MFA Enforcement:
+1. Go to Auth0 Dashboard → Security → Multi-factor Authentication
+2. Click on "Policies" tab
+3. Create a new policy or edit existing one:
+   - **Policy Name**: "Enforce MFA for Crank App"
+   - **Conditions**: 
+     - Client ID equals your Auth0 Client ID
+     - User has MFA enabled
+   - **Actions**: Require MFA
+
+#### Configure Email MFA (Simplest Option):
+1. Go to Auth0 Dashboard → Security → Multi-factor Authentication
+2. Enable "Email" as an MFA method
+3. Configure email templates if needed
+4. Test with a user account
+
+#### Alternative: Use Auth0 Actions for MFA Enforcement:
+1. Go to Auth0 Dashboard → Actions → Flows
+2. Select "Login" flow
+3. Create a new Action with this code:
+
+```javascript
+exports.onExecutePostLogin = async (event, api) => {
+  // Check if user has MFA enabled
+  if (event.user.app_metadata?.mfa_enabled) {
+    // Enforce MFA
+    api.multifactor.enable('email');
+  }
+};
+```
+
+4. Deploy the action and add it to the Login flow
 
 ### 5. Application Integration
 

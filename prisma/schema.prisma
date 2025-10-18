@@ -24,7 +24,6 @@ model User {
   plaidItems       PlaidItem[]
   syncStatus       SyncStatus?
   userPreferences  UserPreferences?
-  mfaSettings      MfaSettings?
 
   @@map("users")
 }
@@ -38,13 +37,36 @@ model Account {
   institutionName String
   name            String
   type            String    // 'credit', 'depository', 'loan', 'investment'
-  subtype         String?   // 'credit_card', 'checking', 'savings', etc.
+  subtype         String?   // 'credit_card', 'checking', 'savings', 'mortgage', 'student', etc.
   mask            String?   // Last 4 digits
   currentBalance  Float?
   availableBalance Float?
   currencyCode    String    @default("USD")
   dueDate         DateTime? // For credit cards: payment due date
   minimumPayment  Float?    // For credit cards: minimum payment required
+  // Additional liability fields
+  creditLimit     Float?    // For credit cards: credit limit
+  lastPaymentAmount Float?  // For credit cards: last payment amount
+  lastPaymentDate DateTime? // For credit cards: last payment date
+  aprs            Json?     // For credit cards: APR information as JSON
+  // Mortgage fields
+  originalBalance Float?    // For mortgages: original loan amount
+  escrowBalance   Float?    // For mortgages: escrow balance
+  interestRatePercentage Float? // For mortgages: interest rate
+  interestRateType String?  // For mortgages: fixed/variable
+  originalTerm    Int?      // For mortgages: original term in months
+  maturityDate    DateTime? // For mortgages: loan maturity date
+  originationDate DateTime? // For mortgages: loan origination date
+  originationPrincipalAmount Float? // For mortgages: original principal
+  principalBalance Float?   // For mortgages: principal balance
+  propertyAddress Json?     // For mortgages: property address as JSON
+  ytdInterestPaid Float?    // For mortgages: year-to-date interest paid
+  ytdPrincipalPaid Float?   // For mortgages: year-to-date principal paid
+  // Student loan fields
+  repaymentPlan   String?   // For student loans: repayment plan type
+  sequenceNumber  Int?      // For student loans: sequence number
+  servicerAddress Json?     // For student loans: servicer address as JSON
+  lastUpdated     DateTime? // Last time account data was updated
   isActive        Boolean   @default(true)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -111,7 +133,9 @@ model PlaidItem {
   institutionId String
   institutionName String
   status       String   @default("active")
+  lastError    String?  // Last error message if status is error
   lastSyncAt   DateTime?
+  lastUpdated  DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -170,19 +194,20 @@ model UserPreferences {
   @@map("user_preferences")
 }
 
-model MfaSettings {
-  id                String   @id @default(cuid())
-  userId            String   @unique
-  isEnabled         Boolean  @default(false)
-  mfaMethod         String?  // 'sms', 'email', 'totp', 'push'
-  phoneNumber       String?  // For SMS 2FA
-  backupCodes       String[] // Array of backup codes
-  totpSecret        String?  // For TOTP (Time-based One-Time Password)
-  lastUsedAt        DateTime?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+model WebhookEvent {
+  id              String    @id @default(cuid())
+  webhookId       String    @unique
+  webhookType     String    // 'TRANSACTIONS', 'ACCOUNTS', 'ITEM', 'LIABILITIES'
+  webhookCode     String    // 'INITIAL_UPDATE', 'BALANCE', 'ERROR', etc.
+  itemId          String?   // Plaid item ID
+  processed       Boolean   @default(false)
+  error           String?   // Error message if processing failed
+  payload         Json      // Full webhook payload
+  processedAt     DateTime?
+  processingTimeMs Int?     // Processing time in milliseconds
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("mfa_settings")
+  @@map("webhook_events")
 }
+

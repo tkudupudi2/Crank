@@ -43,7 +43,16 @@ export default function AnalyticsBlurb({ transactions, accounts }: AnalyticsBlur
 
   const currentMonthTransactions = transactions.filter(transaction => {
     const transactionDate = new Date(transaction.date)
-    const account = accounts.find(a => a.id === transaction.accountId)
+    const account = accounts.find(a => a.id === transaction.account.id)
+    
+    // Skip payment transactions (they're not spending)
+    const isPayment = transaction.description?.toLowerCase().includes('payment') || 
+                     transaction.category?.includes('Payment') ||
+                     transaction.category?.includes('Transfer')
+    
+    if (isPayment) {
+      return false
+    }
     
     // Only include spending transactions
     let isSpending = false
@@ -55,10 +64,12 @@ export default function AnalyticsBlurb({ transactions, accounts }: AnalyticsBlur
       }
     }
     
-    return isSpending && 
-           transactionDate.getMonth() === currentMonth && 
-           transactionDate.getFullYear() === currentYear
+    const isCurrentMonth = transactionDate.getMonth() === currentMonth && 
+                          transactionDate.getFullYear() === currentYear
+    
+    return isSpending && isCurrentMonth
   })
+  
 
   const monthlySpending = currentMonthTransactions.reduce((sum, transaction) => {
     return sum + Math.abs(transaction.amount)
@@ -70,7 +81,16 @@ export default function AnalyticsBlurb({ transactions, accounts }: AnalyticsBlur
 
   const lastMonthTransactions = transactions.filter(transaction => {
     const transactionDate = new Date(transaction.date)
-    const account = accounts.find(a => a.id === transaction.accountId)
+    const account = accounts.find(a => a.id === transaction.account.id)
+    
+    // Skip payment transactions (they're not spending)
+    const isPayment = transaction.description?.toLowerCase().includes('payment') || 
+                     transaction.category?.includes('Payment') ||
+                     transaction.category?.includes('Transfer')
+    
+    if (isPayment) {
+      return false
+    }
     
     let isSpending = false
     if (account) {

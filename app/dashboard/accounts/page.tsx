@@ -7,17 +7,19 @@ import { redirect } from 'next/navigation'
 export default async function AccountsPage() {
   const session = await getServerSession(authOptions)
 
-  if (!session?.user?.id) {
+  if (!(session?.user as any)?.id) {
     redirect('/auth/signin')
   }
 
   const accounts = await prisma.account.findMany({
-    where: { userId: session.user.id, isActive: true },
+    where: { userId: (session?.user as any)?.id, isActive: true },
     orderBy: { createdAt: 'desc' },
   })
 
   const creditCards = accounts.filter(account => account.type === 'credit')
   const bankAccounts = accounts.filter(account => account.type === 'depository')
+  const mortgages = accounts.filter(account => account.subtype === 'mortgage')
+  const studentLoans = accounts.filter(account => account.subtype === 'student')
 
   return (
     <div className="space-y-6">
@@ -30,6 +32,8 @@ export default async function AccountsPage() {
         accounts={accounts}
         creditCards={creditCards}
         bankAccounts={bankAccounts}
+        mortgages={mortgages}
+        studentLoans={studentLoans}
       />
     </div>
   )

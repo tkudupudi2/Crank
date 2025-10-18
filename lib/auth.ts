@@ -12,6 +12,7 @@ export const authOptions: NextAuthOptions = {
         params: {
           scope: 'openid email profile',
           prompt: 'login', // Force fresh login to ensure MFA is checked
+          acr_values: 'http://schemas.openid.net/pape/policies/2007/06/multi-factor', // Enforce MFA
         },
       },
       checks: ['pkce'],
@@ -26,16 +27,16 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: '/auth/signin',
-    signUp: '/auth/signup',
+    signOut: '/',
   },
   callbacks: {
     async signIn({ user, account, profile }) {
       if (account?.provider === 'auth0') {
         try {
           // Extract first name from Auth0 profile
-          const firstName = profile?.given_name || 
+          const firstName = (profile as any)?.given_name || 
                            profile?.name?.split(' ')[0] || 
-                           profile?.nickname || 
+                           (profile as any)?.nickname || 
                            user.name?.split(' ')[0] || 
                            user.name
 
@@ -75,16 +76,29 @@ export const authOptions: NextAuthOptions = {
           token.id = dbUser.id
         }
       }
+      
+      // If we have a token with an ID, check if user still exists
+      if (token.id) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string }
+        })
+        // If user doesn't exist (was deleted), clear the token
+        if (!dbUser) {
+          return {}
+        }
+      }
+      
       return token
     },
     async session({ session, token }) {
-      if (token) {
-        session.user.id = token.id as string
+      if (token && session.user) {
+        (session.user as any).id = token.id as string
         
         // Get the latest user data from database to ensure we have the correct name
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string }
         })
+        
         if (dbUser) {
           session.user.name = dbUser.name
           session.user.email = dbUser.email

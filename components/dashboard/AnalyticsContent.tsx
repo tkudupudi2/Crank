@@ -95,6 +95,15 @@ export default function AnalyticsContent({ accounts, transactions, monthlyTransa
   
   const filteredTransactions = getFilteredTransactions(timePeriod)
   
+  // Debug logging
+  console.log('Analytics Debug:', {
+    totalTransactions: transactions.length,
+    filteredTransactions: filteredTransactions.length,
+    timePeriod,
+    accounts: accounts.length,
+    sampleTransactions: transactions.slice(0, 3)
+  })
+  
   // Calculate balance metrics
   const creditCardBalance = accounts
     .filter(account => account.type === 'credit')
