@@ -16,7 +16,7 @@ interface BankAccount {
   canPay: boolean
 }
 
-interface CreditCard {
+interface Account {
   id: string
   name: string
   subtype: string | null
@@ -29,12 +29,13 @@ interface CreditCard {
 }
 
 interface PaymentFormProps {
-  creditCard: CreditCard
+  account: Account
+  accountType: 'credit' | 'mortgage' | 'student'
   onClose: () => void
   onSuccess: () => void
 }
 
-export default function PaymentForm({ creditCard, onClose, onSuccess }: PaymentFormProps) {
+export default function PaymentForm({ account, accountType, onClose, onSuccess }: PaymentFormProps) {
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
   const [selectedBankAccount, setSelectedBankAccount] = useState<string>('')
   const [amount, setAmount] = useState<string>('')
@@ -72,14 +73,14 @@ export default function PaymentForm({ creditCard, onClose, onSuccess }: PaymentF
 
   // Set default amount based on payment type
   useEffect(() => {
-    if (paymentType === 'minimum' && creditCard.minimumPayment) {
-      setAmount(creditCard.minimumPayment.toString())
+    if (paymentType === 'minimum' && account.minimumPayment) {
+      setAmount(account.minimumPayment.toString())
     } else if (paymentType === 'full_balance') {
-      setAmount(creditCard.currentBalance.toString())
+      setAmount(account.currentBalance.toString())
     } else if (paymentType === 'custom') {
       setAmount('')
     }
-  }, [paymentType, creditCard.minimumPayment, creditCard.currentBalance])
+  }, [paymentType, account.minimumPayment, account.currentBalance])
 
   // Set default scheduled date (next business day)
   useEffect(() => {
@@ -109,8 +110,8 @@ export default function PaymentForm({ creditCard, onClose, onSuccess }: PaymentF
       return
     }
 
-    const selectedAccount = bankAccounts.find(acc => acc.id === selectedBankAccount)
-    if (selectedAccount && parseFloat(amount) > selectedAccount.availableBalance) {
+    const selectedBankAccountData = bankAccounts.find(acc => acc.id === selectedBankAccount)
+    if (selectedBankAccountData && parseFloat(amount) > selectedBankAccountData.availableBalance) {
       setError('Insufficient funds in selected account')
       return
     }
@@ -118,34 +119,38 @@ export default function PaymentForm({ creditCard, onClose, onSuccess }: PaymentF
     setIsSubmitting(true)
 
     try {
-      // Create payment using mock payment system (since Payment Initiation requires production access)
-      const response = await fetch('/api/payments/create', {
+      // Use Plaid Transfer API for real ACH transfers
+      // This creates actual money transfers from bank account to credit card
+      const response = await fetch('/api/plaid/transfer', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          transferAmount: parseFloat(amount),
           fromAccountId: selectedBankAccount,
-          toAccountId: creditCard.id,
-          amount: parseFloat(amount),
-          description: description || `Payment to ${creditCard.name}`,
-          paymentType: 'manual',
-          scheduledDate: scheduledDate || null,
+          toAccountId: account.id,
+          transferDescription: description || `Payment to ${account.name}`,
         }),
       })
 
       const data = await response.json()
 
       if (response.ok) {
-        setSuccess(data.message || 'Payment created successfully')
+        setSuccess(data.message || 'Transfer created successfully with Plaid Transfer API')
         setTimeout(() => {
           onSuccess()
           onClose()
         }, 2000)
       } else {
-        setError(data.error || 'Failed to create payment')
+        // Show detailed error information
+        const errorMessage = data.details || data.error || 'Failed to create transfer'
+        const errorCode = data.code ? ` (Code: ${data.code})` : ''
+        setError(`${errorMessage}${errorCode}`)
+        console.error('Plaid Transfer API error:', data)
       }
     } catch (error) {
+      console.error('Network error:', error)
       setError('Network error. Please try again.')
     } finally {
       setIsSubmitting(false)
@@ -159,7 +164,7 @@ export default function PaymentForm({ creditCard, onClose, onSuccess }: PaymentF
     }).format(amount)
   }
 
-  const selectedAccount = bankAccounts.find(acc => acc.id === selectedBankAccount)
+  const selectedBankAccountData = bankAccounts.find(acc => acc.id === selectedBankAccount)
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -167,11 +172,15 @@ export default function PaymentForm({ creditCard, onClose, onSuccess }: PaymentF
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <div>
             <CardTitle className="flex items-center space-x-2">
-              <CreditCard className="h-5 w-5" />
-              <span>Pay Credit Card</span>
+              {accountType === 'credit' ? (
+                <CreditCard className="h-5 w-5" />
+              ) : (
+                <Building2 className="h-5 w-5" />
+              )}
+              <span>Pay {accountType === 'credit' ? 'Credit Card' : accountType === 'mortgage' ? 'Mortgage' : 'Student Loan'}</span>
             </CardTitle>
             <CardDescription>
-              Paying {creditCard.name} •••• {creditCard.mask}
+              Paying {account.name} •••• {account.mask}
             </CardDescription>
           </div>
           <Button variant="ghost" size="sm" onClick={onClose}>
@@ -181,36 +190,42 @@ export default function PaymentForm({ creditCard, onClose, onSuccess }: PaymentF
 
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Credit Card Info */}
+            {/* Account Info */}
             <div className="bg-gray-50  p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">Credit Card Details</h3>
+              <h3 className="font-semibold mb-2">
+                {accountType === 'credit' ? 'Credit Card' : accountType === 'mortgage' ? 'Mortgage' : 'Student Loan'} Details
+              </h3>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-muted-foreground">Current Balance:</span>
-                  <div className="font-semibold">{formatCurrency(creditCard.currentBalance)}</div>
+                  <div className="font-semibold">{formatCurrency(account.currentBalance)}</div>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Due Date:</span>
+                  <span className="text-muted-foreground">
+                    {accountType === 'credit' ? 'Due Date:' : 'Next Payment Due:'}
+                  </span>
                   <div className="font-semibold">
-                    {creditCard.dueDate 
-                      ? new Date(creditCard.dueDate).toLocaleDateString()
+                    {account.dueDate 
+                      ? new Date(account.dueDate).toLocaleDateString()
                       : 'Not set'
                     }
-                    {creditCard.daysUntilDue !== null && (
+                    {account.daysUntilDue !== null && (
                       <span className={`ml-2 text-xs ${
-                        creditCard.daysUntilDue <= 3 ? 'text-red-600' : 
-                        creditCard.daysUntilDue <= 7 ? 'text-yellow-600' : 
+                        account.daysUntilDue <= 3 ? 'text-red-600' : 
+                        account.daysUntilDue <= 7 ? 'text-yellow-600' : 
                         'text-green-600'
                       }`}>
-                        ({creditCard.daysUntilDue} days)
+                        ({account.daysUntilDue} days)
                       </span>
                     )}
                   </div>
                 </div>
-                {creditCard.minimumPayment && (
+                {account.minimumPayment && (
                   <div>
-                    <span className="text-muted-foreground">Minimum Payment:</span>
-                    <div className="font-semibold">{formatCurrency(creditCard.minimumPayment)}</div>
+                    <span className="text-muted-foreground">
+                      {accountType === 'credit' ? 'Minimum Payment:' : 'Monthly Payment:'}
+                    </span>
+                    <div className="font-semibold">{formatCurrency(account.minimumPayment)}</div>
                   </div>
                 )}
               </div>
@@ -285,7 +300,7 @@ export default function PaymentForm({ creditCard, onClose, onSuccess }: PaymentF
                   type="number"
                   step="0.01"
                   min="0.01"
-                  max={selectedAccount?.availableBalance || creditCard.currentBalance}
+                  max={selectedBankAccountData?.availableBalance || account.currentBalance}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -293,9 +308,9 @@ export default function PaymentForm({ creditCard, onClose, onSuccess }: PaymentF
                   required
                 />
               </div>
-              {selectedAccount && (
+              {selectedBankAccountData && (
                 <div className="text-xs text-muted-foreground mt-1">
-                  Available: {formatCurrency(selectedAccount.availableBalance)}
+                  Available: {formatCurrency(selectedBankAccountData.availableBalance)}
                 </div>
               )}
             </div>

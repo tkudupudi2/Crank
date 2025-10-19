@@ -66,7 +66,7 @@ export default function AccountsList({ accounts, creditCards, bankAccounts, mort
   const [dueDate, setDueDate] = useState('')
   const [minimumPayment, setMinimumPayment] = useState('')
   const [updatingCreditCard, setUpdatingCreditCard] = useState(false)
-  const [selectedAccount, setSelectedAccount] = useState<Account | null>(null)
+  const [selectedAccountForInfo, setSelectedAccountForInfo] = useState<Account | null>(null)
   const [showAccountModal, setShowAccountModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [accountToDelete, setAccountToDelete] = useState<{ id: string; name: string } | null>(null)
@@ -74,7 +74,8 @@ export default function AccountsList({ accounts, creditCards, bankAccounts, mort
   const [liabilitiesResult, setLiabilitiesResult] = useState<{ success: boolean; message?: string } | null>(null)
   const [refreshingLiabilities, setRefreshingLiabilities] = useState(false)
   const [showPaymentForm, setShowPaymentForm] = useState(false)
-  const [selectedCreditCard, setSelectedCreditCard] = useState<Account | null>(null)
+  const [selectedAccountForPayment, setSelectedAccountForPayment] = useState<Account | null>(null)
+  const [paymentAccountType, setPaymentAccountType] = useState<'credit' | 'mortgage' | 'student' | null>(null)
   const router = useRouter()
 
   const formatCurrency = (amount: number | null) => {
@@ -147,13 +148,13 @@ export default function AccountsList({ accounts, creditCards, bankAccounts, mort
   }
 
   const handleShowAccountInfo = (account: Account) => {
-    setSelectedAccount(account)
+    setSelectedAccountForInfo(account)
     setShowAccountModal(true)
   }
 
   const handleCloseAccountModal = () => {
     setShowAccountModal(false)
-    setSelectedAccount(null)
+    setSelectedAccountForInfo(null)
   }
 
   const getAccountTypeBg = (type: string) => {
@@ -290,8 +291,9 @@ export default function AccountsList({ accounts, creditCards, bankAccounts, mort
     }
   }
 
-  const handlePayCreditCard = (creditCard: Account) => {
-    setSelectedCreditCard(creditCard)
+  const handlePayAccount = (account: Account, accountType: 'credit' | 'mortgage' | 'student') => {
+    setSelectedAccountForPayment(account)
+    setPaymentAccountType(accountType)
     setShowPaymentForm(true)
   }
 
@@ -302,7 +304,8 @@ export default function AccountsList({ accounts, creditCards, bankAccounts, mort
 
   const handleClosePaymentForm = () => {
     setShowPaymentForm(false)
-    setSelectedCreditCard(null)
+    setSelectedAccountForPayment(null)
+    setPaymentAccountType(null)
   }
 
   return (
@@ -542,7 +545,7 @@ export default function AccountsList({ accounts, creditCards, bankAccounts, mort
                                  variant="outline" 
                                  size="sm" 
                                  className="flex-1"
-                                 onClick={() => handlePayCreditCard(account)}
+                                 onClick={() => handlePayAccount(account, 'credit')}
                                >
                                  <DollarSign className="h-4 w-4 mr-2" />
                                  Pay
@@ -764,6 +767,21 @@ export default function AccountsList({ accounts, creditCards, bankAccounts, mort
                       )}
                     </div>
                     <div className="mt-4 space-y-2">
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => handlePayAccount(account, 'mortgage')}
+                        >
+                          <DollarSign className="h-4 w-4 mr-2" />
+                          Pay
+                        </Button>
+                        <Button variant="outline" size="sm" className="flex-1">
+                          <Calendar className="h-4 w-4 mr-2" />
+                          Schedule
+                        </Button>
+                      </div>
                       <Button
                         variant="outline"
                         size="sm"
@@ -891,6 +909,21 @@ export default function AccountsList({ accounts, creditCards, bankAccounts, mort
                       )}
                     </div>
                     <div className="mt-4 space-y-2">
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => handlePayAccount(account, 'student')}
+                        >
+                          <DollarSign className="h-4 w-4 mr-2" />
+                          Pay
+                        </Button>
+                        <Button variant="outline" size="sm" className="flex-1">
+                          <Calendar className="h-4 w-4 mr-2" />
+                          Schedule
+                        </Button>
+                      </div>
                       <Button
                         variant="outline"
                         size="sm"
@@ -933,7 +966,7 @@ export default function AccountsList({ accounts, creditCards, bankAccounts, mort
       )}
 
       {/* Account Info Modal */}
-      {showAccountModal && selectedAccount && (
+      {showAccountModal && selectedAccountForInfo && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -953,19 +986,19 @@ export default function AccountsList({ accounts, creditCards, bankAccounts, mort
             <div className="p-6 space-y-6">
               {/* Account Header */}
               <div className="flex items-center space-x-4">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${getAccountTypeBg(selectedAccount.type)}`}>
-                  {selectedAccount.type === 'credit' ? (
-                    <CreditCard className={`h-6 w-6 ${getAccountTypeColor(selectedAccount.type)}`} />
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${getAccountTypeBg(selectedAccountForInfo.type)}`}>
+                  {selectedAccountForInfo.type === 'credit' ? (
+                    <CreditCard className={`h-6 w-6 ${getAccountTypeColor(selectedAccountForInfo.type)}`} />
                   ) : (
-                    <Building2 className={`h-6 w-6 ${getAccountTypeColor(selectedAccount.type)}`} />
+                    <Building2 className={`h-6 w-6 ${getAccountTypeColor(selectedAccountForInfo.type)}`} />
                   )}
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">
-                    {selectedAccount.name}
+                    {selectedAccountForInfo.name}
                   </h3>
                   <p className="text-sm text-gray-600">
-                    {selectedAccount.institutionName} • {selectedAccount.subtype || selectedAccount.type}
+                    {selectedAccountForInfo.institutionName} • {selectedAccountForInfo.subtype || selectedAccountForInfo.type}
                   </p>
                 </div>
               </div>
@@ -982,31 +1015,31 @@ export default function AccountsList({ accounts, creditCards, bankAccounts, mort
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600 ">Account ID</span>
                       <span className="text-sm font-mono text-gray-900 ">
-                        {selectedAccount.id.slice(0, 8)}...
+                        {selectedAccountForInfo.id.slice(0, 8)}...
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600 ">Account Type</span>
                       <span className="text-sm text-gray-900  capitalize">
-                        {selectedAccount.type}
+                        {selectedAccountForInfo.type}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600 ">Subtype</span>
                       <span className="text-sm text-gray-900  capitalize">
-                        {selectedAccount.subtype || 'N/A'}
+                        {selectedAccountForInfo.subtype || 'N/A'}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600 ">Account Number</span>
                       <span className="text-sm font-mono text-gray-900 ">
-                        •••• {selectedAccount.mask}
+                        •••• {selectedAccountForInfo.mask}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600 ">Currency</span>
                       <span className="text-sm text-gray-900 ">
-                        {selectedAccount.currencyCode}
+                        {selectedAccountForInfo.currencyCode}
                       </span>
                     </div>
                   </div>
@@ -1021,33 +1054,33 @@ export default function AccountsList({ accounts, creditCards, bankAccounts, mort
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600 ">Current Balance</span>
-                      <span className={`text-sm font-semibold ${getAccountTypeColor(selectedAccount.type)}`}>
-                        {showBalances ? formatCurrency(selectedAccount.currentBalance) : '••••'}
+                      <span className={`text-sm font-semibold ${getAccountTypeColor(selectedAccountForInfo.type)}`}>
+                        {showBalances ? formatCurrency(selectedAccountForInfo.currentBalance) : '••••'}
                       </span>
                     </div>
-                    {selectedAccount.availableBalance !== null && (
+                    {selectedAccountForInfo.availableBalance !== null && (
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-600 ">
-                          {selectedAccount.type === 'credit' ? 'Available Credit' : 'Available Balance'}
+                          {selectedAccountForInfo.type === 'credit' ? 'Available Credit' : 'Available Balance'}
                         </span>
                         <span className="text-sm font-semibold text-green-600">
-                          {showBalances ? formatCurrency(selectedAccount.availableBalance) : '••••'}
+                          {showBalances ? formatCurrency(selectedAccountForInfo.availableBalance) : '••••'}
                         </span>
                       </div>
                     )}
-                    {selectedAccount.type === 'credit' && (
+                    {selectedAccountForInfo.type === 'credit' && (
                       <>
                         <div className="flex justify-between">
                           <span className="text-sm text-gray-600 ">Due Date</span>
                           <span className="text-sm text-gray-900  flex items-center">
                             <Calendar className="h-3 w-3 mr-1" />
-                            {formatDate(selectedAccount.dueDate)}
+                            {formatDate(selectedAccountForInfo.dueDate)}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-sm text-gray-600 ">Minimum Payment</span>
                           <span className="text-sm text-gray-900 ">
-                            {selectedAccount.minimumPayment ? formatCurrency(selectedAccount.minimumPayment) : 'Not set'}
+                            {selectedAccountForInfo.minimumPayment ? formatCurrency(selectedAccountForInfo.minimumPayment) : 'Not set'}
                           </span>
                         </div>
                       </>
@@ -1057,14 +1090,14 @@ export default function AccountsList({ accounts, creditCards, bankAccounts, mort
               </div>
 
               {/* Interest Rates Section - Only for Credit Cards */}
-              {selectedAccount.type === 'credit' && selectedAccount.aprs && selectedAccount.aprs.length > 0 && (
+              {selectedAccountForInfo.type === 'credit' && selectedAccountForInfo.aprs && selectedAccountForInfo.aprs.length > 0 && (
                 <div className="border-t border-gray-200 pt-4">
                   <h4 className="font-medium text-gray-900 flex items-center mb-4">
                     <TrendingUp className="h-4 w-4 mr-2" />
                     Interest Rates (APR)
                   </h4>
                   <div className="space-y-3">
-                    {selectedAccount.aprs.map((apr, index) => (
+                    {selectedAccountForInfo.aprs.map((apr, index) => (
                       <div key={index} className="bg-gray-50 rounded-lg p-4">
                         <div className="flex justify-between items-center mb-2">
                           <span className="font-medium text-sm capitalize">
@@ -1091,83 +1124,83 @@ export default function AccountsList({ accounts, creditCards, bankAccounts, mort
               )}
 
               {/* Mortgage-specific information */}
-              {selectedAccount.subtype === 'mortgage' && (
+              {selectedAccountForInfo.subtype === 'mortgage' && (
                 <div className="border-t border-gray-200 pt-4">
                   <h4 className="font-medium text-gray-900 flex items-center mb-4">
                     <Building2 className="h-4 w-4 mr-2" />
                     Mortgage Details
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {selectedAccount.originalBalance && (
+                    {selectedAccountForInfo.originalBalance && (
                       <div className="bg-gray-50 rounded-lg p-4">
                         <div className="text-sm text-gray-600 mb-1">Original Loan Amount</div>
-                        <div className="font-semibold text-lg">{formatCurrency(selectedAccount.originalBalance)}</div>
+                        <div className="font-semibold text-lg">{formatCurrency(selectedAccountForInfo.originalBalance)}</div>
                       </div>
                     )}
-                    {selectedAccount.principalBalance && (
+                    {selectedAccountForInfo.principalBalance && (
                       <div className="bg-gray-50 rounded-lg p-4">
                         <div className="text-sm text-gray-600 mb-1">Principal Balance</div>
-                        <div className="font-semibold text-lg">{formatCurrency(selectedAccount.principalBalance)}</div>
+                        <div className="font-semibold text-lg">{formatCurrency(selectedAccountForInfo.principalBalance)}</div>
                       </div>
                     )}
-                    {selectedAccount.escrowBalance && (
+                    {selectedAccountForInfo.escrowBalance && (
                       <div className="bg-gray-50 rounded-lg p-4">
                         <div className="text-sm text-gray-600 mb-1">Escrow Balance</div>
-                        <div className="font-semibold text-lg">{formatCurrency(selectedAccount.escrowBalance)}</div>
+                        <div className="font-semibold text-lg">{formatCurrency(selectedAccountForInfo.escrowBalance)}</div>
                       </div>
                     )}
-                    {selectedAccount.interestRatePercentage && (
+                    {selectedAccountForInfo.interestRatePercentage && (
                       <div className="bg-gray-50 rounded-lg p-4">
                         <div className="text-sm text-gray-600 mb-1">Interest Rate</div>
-                        <div className="font-semibold text-lg">{selectedAccount.interestRatePercentage}%</div>
-                        {selectedAccount.interestRateType && (
-                          <div className="text-xs text-gray-500 capitalize">{selectedAccount.interestRateType}</div>
+                        <div className="font-semibold text-lg">{selectedAccountForInfo.interestRatePercentage}%</div>
+                        {selectedAccountForInfo.interestRateType && (
+                          <div className="text-xs text-gray-500 capitalize">{selectedAccountForInfo.interestRateType}</div>
                         )}
                       </div>
                     )}
-                    {selectedAccount.originalTerm && (
+                    {selectedAccountForInfo.originalTerm && (
                       <div className="bg-gray-50 rounded-lg p-4">
                         <div className="text-sm text-gray-600 mb-1">Original Term</div>
-                        <div className="font-semibold text-lg">{selectedAccount.originalTerm} months</div>
+                        <div className="font-semibold text-lg">{selectedAccountForInfo.originalTerm} months</div>
                       </div>
                     )}
-                    {selectedAccount.maturityDate && (
+                    {selectedAccountForInfo.maturityDate && (
                       <div className="bg-gray-50 rounded-lg p-4">
                         <div className="text-sm text-gray-600 mb-1">Maturity Date</div>
-                        <div className="font-semibold text-lg">{formatDate(selectedAccount.maturityDate)}</div>
+                        <div className="font-semibold text-lg">{formatDate(selectedAccountForInfo.maturityDate)}</div>
                       </div>
                     )}
-                    {selectedAccount.originationDate && (
+                    {selectedAccountForInfo.originationDate && (
                       <div className="bg-gray-50 rounded-lg p-4">
                         <div className="text-sm text-gray-600 mb-1">Origination Date</div>
-                        <div className="font-semibold text-lg">{formatDate(selectedAccount.originationDate)}</div>
+                        <div className="font-semibold text-lg">{formatDate(selectedAccountForInfo.originationDate)}</div>
                       </div>
                     )}
-                    {selectedAccount.ytdInterestPaid && (
+                    {selectedAccountForInfo.ytdInterestPaid && (
                       <div className="bg-gray-50 rounded-lg p-4">
                         <div className="text-sm text-gray-600 mb-1">YTD Interest Paid</div>
-                        <div className="font-semibold text-lg">{formatCurrency(selectedAccount.ytdInterestPaid)}</div>
+                        <div className="font-semibold text-lg">{formatCurrency(selectedAccountForInfo.ytdInterestPaid)}</div>
                       </div>
                     )}
-                    {selectedAccount.ytdPrincipalPaid && (
+                    {selectedAccountForInfo.ytdPrincipalPaid && (
                       <div className="bg-gray-50 rounded-lg p-4">
                         <div className="text-sm text-gray-600 mb-1">YTD Principal Paid</div>
-                        <div className="font-semibold text-lg">{formatCurrency(selectedAccount.ytdPrincipalPaid)}</div>
+                        <div className="font-semibold text-lg">{formatCurrency(selectedAccountForInfo.ytdPrincipalPaid)}</div>
                       </div>
                     )}
                   </div>
-        {selectedAccount.propertyAddress && (
+        {selectedAccountForInfo.propertyAddress && (
           <div className="mt-4 bg-gray-50 rounded-lg p-4">
             <div className="text-sm text-gray-600 mb-2">Property Address</div>
             <div className="text-sm">
               {(() => {
                 try {
-                  const address = typeof selectedAccount.propertyAddress === 'string' 
-                    ? JSON.parse(selectedAccount.propertyAddress) 
-                    : selectedAccount.propertyAddress
+                  const address = typeof selectedAccountForInfo.propertyAddress === 'string' 
+                    ? JSON.parse(selectedAccountForInfo.propertyAddress) 
+                    : selectedAccountForInfo.propertyAddress
                   return Object.values(address).filter(Boolean).join(', ')
                 } catch {
-                  return selectedAccount.propertyAddress
+                  return selectedAccountForInfo.propertyAddress
                 }
               })()}
             </div>
@@ -1177,76 +1210,76 @@ export default function AccountsList({ accounts, creditCards, bankAccounts, mort
               )}
 
               {/* Student loan-specific information */}
-              {selectedAccount.subtype === 'student' && (
+              {selectedAccountForInfo.subtype === 'student' && (
                 <div className="border-t border-gray-200 pt-4">
                   <h4 className="font-medium text-gray-900 flex items-center mb-4">
                     <Building2 className="h-4 w-4 mr-2" />
                     Student Loan Details
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {selectedAccount.originalBalance && (
+                    {selectedAccountForInfo.originalBalance && (
                       <div className="bg-gray-50 rounded-lg p-4">
                         <div className="text-sm text-gray-600 mb-1">Original Loan Amount</div>
-                        <div className="font-semibold text-lg">{formatCurrency(selectedAccount.originalBalance)}</div>
+                        <div className="font-semibold text-lg">{formatCurrency(selectedAccountForInfo.originalBalance)}</div>
                       </div>
                     )}
-                    {selectedAccount.interestRatePercentage && (
+                    {selectedAccountForInfo.interestRatePercentage && (
                       <div className="bg-gray-50 rounded-lg p-4">
                         <div className="text-sm text-gray-600 mb-1">Interest Rate</div>
-                        <div className="font-semibold text-lg">{selectedAccount.interestRatePercentage}%</div>
-                        {selectedAccount.interestRateType && (
-                          <div className="text-xs text-gray-500 capitalize">{selectedAccount.interestRateType}</div>
+                        <div className="font-semibold text-lg">{selectedAccountForInfo.interestRatePercentage}%</div>
+                        {selectedAccountForInfo.interestRateType && (
+                          <div className="text-xs text-gray-500 capitalize">{selectedAccountForInfo.interestRateType}</div>
                         )}
                       </div>
                     )}
-          {selectedAccount.repaymentPlan && (
+          {selectedAccountForInfo.repaymentPlan && (
             <div className="bg-gray-50 rounded-lg p-4">
               <div className="text-sm text-gray-600 mb-1">Repayment Plan</div>
               <div className="font-semibold text-lg capitalize">
                 {(() => {
                   try {
-                    const plan = typeof selectedAccount.repaymentPlan === 'string' 
-                      ? JSON.parse(selectedAccount.repaymentPlan) 
-                      : selectedAccount.repaymentPlan
-                    return plan.description || plan.type || selectedAccount.repaymentPlan.replace(/_/g, ' ')
+                    const plan = typeof selectedAccountForInfo.repaymentPlan === 'string' 
+                      ? JSON.parse(selectedAccountForInfo.repaymentPlan) 
+                      : selectedAccountForInfo.repaymentPlan
+                    return plan.description || plan.type || selectedAccountForInfo.repaymentPlan.replace(/_/g, ' ')
                   } catch {
-                    return selectedAccount.repaymentPlan.replace(/_/g, ' ')
+                    return selectedAccountForInfo.repaymentPlan.replace(/_/g, ' ')
                   }
                 })()}
               </div>
             </div>
           )}
-                    {selectedAccount.sequenceNumber && (
+                    {selectedAccountForInfo.sequenceNumber && (
                       <div className="bg-gray-50 rounded-lg p-4">
                         <div className="text-sm text-gray-600 mb-1">Sequence Number</div>
-                        <div className="font-semibold text-lg">{selectedAccount.sequenceNumber}</div>
+                        <div className="font-semibold text-lg">{selectedAccountForInfo.sequenceNumber}</div>
                       </div>
                     )}
-                    {selectedAccount.ytdInterestPaid && (
+                    {selectedAccountForInfo.ytdInterestPaid && (
                       <div className="bg-gray-50 rounded-lg p-4">
                         <div className="text-sm text-gray-600 mb-1">YTD Interest Paid</div>
-                        <div className="font-semibold text-lg">{formatCurrency(selectedAccount.ytdInterestPaid)}</div>
+                        <div className="font-semibold text-lg">{formatCurrency(selectedAccountForInfo.ytdInterestPaid)}</div>
                       </div>
                     )}
-                    {selectedAccount.ytdPrincipalPaid && (
+                    {selectedAccountForInfo.ytdPrincipalPaid && (
                       <div className="bg-gray-50 rounded-lg p-4">
                         <div className="text-sm text-gray-600 mb-1">YTD Principal Paid</div>
-                        <div className="font-semibold text-lg">{formatCurrency(selectedAccount.ytdPrincipalPaid)}</div>
+                        <div className="font-semibold text-lg">{formatCurrency(selectedAccountForInfo.ytdPrincipalPaid)}</div>
                       </div>
                     )}
                   </div>
-        {selectedAccount.servicerAddress && (
+        {selectedAccountForInfo.servicerAddress && (
           <div className="mt-4 bg-gray-50 rounded-lg p-4">
             <div className="text-sm text-gray-600 mb-2">Servicer Address</div>
             <div className="text-sm">
               {(() => {
                 try {
-                  const address = typeof selectedAccount.servicerAddress === 'string' 
-                    ? JSON.parse(selectedAccount.servicerAddress) 
-                    : selectedAccount.servicerAddress
+                  const address = typeof selectedAccountForInfo.servicerAddress === 'string' 
+                    ? JSON.parse(selectedAccountForInfo.servicerAddress) 
+                    : selectedAccountForInfo.servicerAddress
                   return Object.values(address).filter(Boolean).join(', ')
                 } catch {
-                  return selectedAccount.servicerAddress
+                  return selectedAccountForInfo.servicerAddress
                 }
               })()}
             </div>
@@ -1355,21 +1388,22 @@ export default function AccountsList({ accounts, creditCards, bankAccounts, mort
       )}
 
       {/* Payment Form Modal */}
-      {showPaymentForm && selectedCreditCard && (
+      {showPaymentForm && selectedAccountForPayment && paymentAccountType && (
         <PaymentForm
-          creditCard={{
-            id: selectedCreditCard.id,
-            name: selectedCreditCard.name,
-            subtype: selectedCreditCard.subtype,
-            mask: selectedCreditCard.mask,
-            institutionName: selectedCreditCard.institutionName,
-            currentBalance: selectedCreditCard.currentBalance || 0,
-            dueDate: selectedCreditCard.dueDate?.toISOString() || null,
-            minimumPayment: selectedCreditCard.minimumPayment,
-            daysUntilDue: selectedCreditCard.dueDate 
-              ? Math.ceil((new Date(selectedCreditCard.dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+          account={{
+            id: selectedAccountForPayment.id,
+            name: selectedAccountForPayment.name,
+            subtype: selectedAccountForPayment.subtype,
+            mask: selectedAccountForPayment.mask,
+            institutionName: selectedAccountForPayment.institutionName,
+            currentBalance: selectedAccountForPayment.currentBalance || 0,
+            dueDate: selectedAccountForPayment.dueDate?.toISOString() || null,
+            minimumPayment: selectedAccountForPayment.minimumPayment,
+            daysUntilDue: selectedAccountForPayment.dueDate 
+              ? Math.ceil((new Date(selectedAccountForPayment.dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
               : null,
           }}
+          accountType={paymentAccountType}
           onClose={handleClosePaymentForm}
           onSuccess={handlePaymentSuccess}
         />

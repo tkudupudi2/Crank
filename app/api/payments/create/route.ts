@@ -55,9 +55,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (toAccount.type !== 'credit') {
+    // Validate that toAccount is a liability account (credit card, mortgage, or student loan)
+    const validLiabilityTypes = ['credit', 'mortgage', 'student']
+    if (!validLiabilityTypes.includes(toAccount.type)) {
       return NextResponse.json(
-        { error: 'To account must be a credit card' },
+        { error: 'To account must be a credit card, mortgage, or student loan' },
         { status: 400 }
       )
     }
@@ -117,8 +119,8 @@ export async function POST(request: NextRequest) {
             }
           })
 
-          // Update to account (credit card) - reduce balance
-          // In this system, credit card balances are stored as positive numbers representing debt
+          // Update to account (liability) - reduce balance
+          // In this system, liability balances are stored as positive numbers representing debt
           // So we decrement the balance to reduce the debt
           await tx.account.update({
             where: { id: toAccountId },
@@ -145,13 +147,13 @@ export async function POST(request: NextRequest) {
             }
           })
 
-          // Create transaction record for the credit card (payment reducing debt)
+          // Create transaction record for the liability account (payment reducing debt)
           await tx.transaction.create({
             data: {
               userId: userId,
               accountId: toAccountId,
               plaidTransactionId: `payment_${payment.id}_to`,
-              amount: -amount, // Negative for credit card payment (reduces debt)
+              amount: -amount, // Negative for liability payment (reduces debt)
               description: `Payment from ${fromAccount.name}`,
               merchantName: fromAccount.institutionName,
               category: ['Payment'],

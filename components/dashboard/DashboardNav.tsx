@@ -3,7 +3,7 @@
 import { signOut } from 'next-auth/react'
 import { useSession } from 'next-auth/react'
 import { Button } from '@/components/ui/Button'
-import { CreditCard, Home, Settings, LogOut, PieChart, TrendingUp, DollarSign, Cog, Target } from 'lucide-react'
+import { CreditCard, Home, Settings, LogOut, PieChart, TrendingUp, DollarSign, Cog, Target, Search } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
@@ -14,6 +14,7 @@ const navigation = [
   { name: 'Payments', href: '/dashboard/payments', icon: DollarSign },
   { name: 'Budget', href: '/dashboard/budget', icon: Target },
   { name: 'Analytics', href: '/dashboard/analytics', icon: PieChart },
+  { name: 'New Accounts', href: '/dashboard/new-accounts', icon: Search },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ]
 

@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
         client_user_id: (session?.user as any)?.id,
       },
       client_name: 'Crank',
-      products: ['transactions', 'identity', 'liabilities'] as any,
+      products: ['transactions', 'identity', 'liabilities', 'transfer'] as any,
       country_codes: ['US'] as any,
       language: 'en',
       webhook: `${process.env.NEXT_PUBLIC_APP_URL}/api/plaid/webhook`,
