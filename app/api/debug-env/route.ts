@@ -8,8 +8,13 @@ export async function GET() {
   
   try {
     dbUrl = process.env.DATABASE_URL ? process.env.DATABASE_URL.substring(0, 30) + '...' : 'NOT SET'
-    await prisma.user.findMany({ take: 1 })
-    dbTest = 'SUCCESS'
+    
+    if (!prisma) {
+      dbTest = 'ERROR: Prisma client not available (build time)'
+    } else {
+      await prisma.user.findMany({ take: 1 })
+      dbTest = 'SUCCESS'
+    }
   } catch (error) {
     dbTest = `ERROR: ${error instanceof Error ? error.message : 'Unknown error'}`
   }
