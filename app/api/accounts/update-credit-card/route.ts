@@ -21,7 +21,7 @@ export async function PUT(request: NextRequest) {
     const account = await prisma.account.findFirst({
       where: {
         id: accountId,
-        userId: session.user.id,
+        userId: (session.user as any).id,
         type: 'credit', // Only allow updating credit card accounts
       },
     })

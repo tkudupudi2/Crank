@@ -7,11 +7,11 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     
-    if (!session?.user?.id) {
+    if (!session?.user || !(session.user as any).id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const userId = session.user.id
+    const userId = (session.user as any).id
 
     // Delete all user-related data in the correct order to avoid foreign key constraints
     await prisma.$transaction(async (tx) => {
@@ -66,7 +66,7 @@ export async function DELETE(request: NextRequest) {
     console.error('Error details:', {
       message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
-      userId: session?.user?.id
+      userId: session?.user ? (session.user as any).id : undefined
     })
     return NextResponse.json(
       { 

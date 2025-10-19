@@ -7,13 +7,13 @@ import SettingsContent from '@/components/dashboard/SettingsContent'
 export default async function SettingsPage() {
   const session = await getServerSession(authOptions)
 
-  if (!session?.user?.id) {
+  if (!session?.user || !(session.user as any).id) {
     redirect('/auth/signin')
   }
 
   // Get user data and connected accounts
   const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
+    where: { id: (session.user as any).id },
     select: {
       id: true,
       email: true,
@@ -23,7 +23,7 @@ export default async function SettingsPage() {
   })
 
   const connectedAccounts = await prisma.account.findMany({
-    where: { userId: session.user.id, isActive: true },
+    where: { userId: (session.user as any).id, isActive: true },
     include: {
       user: {
         select: { email: true }
@@ -33,7 +33,7 @@ export default async function SettingsPage() {
   })
 
   const plaidItems = await prisma.plaidItem.findMany({
-    where: { userId: session.user.id },
+    where: { userId: (session.user as any).id },
     select: {
       id: true,
       institutionName: true,

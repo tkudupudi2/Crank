@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
 
     // Get user's Plaid items
     const plaidItems = await prisma.plaidItem.findMany({
-      where: { userId: session.user.id },
+      where: { userId: (session.user as any).id },
     })
 
     if (plaidItems.length === 0) {
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
                 pending: transaction.pending,
               },
               create: {
-                userId: session.user.id,
+                userId: (session.user as any).id,
                 accountId: account.id,
                 plaidTransactionId: transaction.transaction_id,
                 amount: correctedAmount,

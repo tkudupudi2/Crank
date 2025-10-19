@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
     // Get connected institutions
     const plaidItems = await prisma.plaidItem.findMany({
-      where: { userId: session.user.id },
+      where: { userId: (session.user as any).id },
       select: {
         institutionName: true,
         institutionId: true,

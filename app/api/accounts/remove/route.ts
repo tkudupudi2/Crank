@@ -21,7 +21,7 @@ export async function DELETE(request: NextRequest) {
     const account = await prisma.account.findFirst({
       where: {
         id: accountId,
-        userId: session.user.id,
+        userId: (session.user as any).id,
       },
     })
 
@@ -47,7 +47,7 @@ export async function DELETE(request: NextRequest) {
     // Check if there are any remaining accounts for this institution
     const remainingAccountsForInstitution = await prisma.account.count({
       where: {
-        userId: session.user.id,
+        userId: (session.user as any).id,
         institutionName: institutionName,
       },
     })
@@ -56,7 +56,7 @@ export async function DELETE(request: NextRequest) {
     if (remainingAccountsForInstitution === 0) {
       await prisma.plaidItem.deleteMany({
         where: {
-          userId: session.user.id,
+          userId: (session.user as any).id,
           institutionName: institutionName,
         },
       })
