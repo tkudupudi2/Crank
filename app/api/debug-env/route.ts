@@ -4,7 +4,10 @@ import { prisma } from '@/lib/prisma'
 export async function GET() {
   // Test database connection
   let dbTest = 'NOT TESTED'
+  let dbUrl = 'NOT SET'
+  
   try {
+    dbUrl = process.env.DATABASE_URL ? process.env.DATABASE_URL.substring(0, 30) + '...' : 'NOT SET'
     await prisma.user.findMany({ take: 1 })
     dbTest = 'SUCCESS'
   } catch (error) {
@@ -14,7 +17,7 @@ export async function GET() {
   return NextResponse.json({
     NODE_ENV: process.env.NODE_ENV,
     VERCEL: process.env.VERCEL,
-    DATABASE_URL: process.env.DATABASE_URL ? 'SET' : 'NOT SET',
+    DATABASE_URL: dbUrl,
     DATABASE_TEST: dbTest,
     AUTH0_CLIENT_ID: process.env.AUTH0_CLIENT_ID ? 'SET' : 'NOT SET',
     AUTH0_CLIENT_SECRET: process.env.AUTH0_CLIENT_SECRET ? 'SET' : 'NOT SET',

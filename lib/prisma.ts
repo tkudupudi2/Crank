@@ -5,11 +5,14 @@ const globalForPrisma = globalThis as unknown as {
 }
 
 function createPrismaClient() {
-  // Only use mock during build time when DATABASE_URL is not available
-  if (!process.env.DATABASE_URL) {
-    console.warn('DATABASE_URL not available, using mock Prisma client')
+  // Check if DATABASE_URL is actually available and not empty
+  const databaseUrl = process.env.DATABASE_URL
+  if (!databaseUrl || databaseUrl.trim() === '') {
+    console.warn('DATABASE_URL not available or empty, using mock Prisma client')
     return createMockPrismaClient()
   }
+
+  console.log('Creating Prisma client with DATABASE_URL:', databaseUrl.substring(0, 20) + '...')
 
   try {
     return new PrismaClient({
