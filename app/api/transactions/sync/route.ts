@@ -262,8 +262,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Update account liabilities information for credit cards
-        if (liabilitiesData && liabilitiesData.credit) {
-          for (const creditLiability of liabilitiesData.credit) {
+        if (liabilitiesData && (liabilitiesData as any).credit) {
+          for (const creditLiability of (liabilitiesData as any).credit) {
             const account = await prisma.account.findFirst({
               where: { plaidAccountId: creditLiability.account_id },
             })

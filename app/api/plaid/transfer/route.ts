@@ -164,7 +164,6 @@ export async function POST(request: NextRequest) {
         status: 'pending',
         fromAccountId: fromAccountId,
         toAccountId: toAccountId,
-        plaidTransferId: simulatedTransferId,
         scheduledDate: new Date(),
         createdAt: new Date()
       }
@@ -212,7 +211,7 @@ export async function POST(request: NextRequest) {
           data: {
             userId: userId,
             accountId: fromAccountId,
-            plaidTransactionId: `transfer_${transfer.id}_from`,
+            plaidTransactionId: `transfer_${payment.id}_from`,
             amount: -transferAmount, // Negative for outgoing transfer
             description: `Transfer to ${toAccount.name}`,
             merchantName: toAccount.institutionName,
@@ -228,7 +227,7 @@ export async function POST(request: NextRequest) {
           data: {
             userId: userId,
             accountId: toAccountId,
-            plaidTransactionId: `transfer_${transfer.id}_to`,
+            plaidTransactionId: `transfer_${payment.id}_to`,
             amount: -transferAmount, // Negative for liability payment (reduces debt)
             description: `Transfer from ${fromAccount.name}`,
             merchantName: fromAccount.institutionName,
@@ -241,7 +240,7 @@ export async function POST(request: NextRequest) {
 
         // Update transfer status to completed
         await tx.payment.update({
-          where: { id: transfer.id },
+          where: { id: payment.id },
           data: {
             status: 'completed',
             processedDate: new Date(),

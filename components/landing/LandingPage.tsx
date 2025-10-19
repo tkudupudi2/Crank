@@ -129,7 +129,7 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section 
-        ref={(el) => (sectionRefs.current[0] = el)}
+        ref={(el) => { sectionRefs.current[0] = el }}
         className="scroll-section min-h-screen flex items-center justify-center pt-32 pb-20 px-6 text-center"
       >
         <div className="max-w-4xl mx-auto">
@@ -177,7 +177,7 @@ export default function LandingPage() {
 
       {/* Credit Card Management */}
       <section 
-        ref={(el) => (sectionRefs.current[1] = el)}
+        ref={(el) => { sectionRefs.current[1] = el }}
         className="scroll-section min-h-screen flex items-center py-32 px-6 bg-gradient-to-br from-blue-50/30 to-purple-50/30"
       >
         <div className="max-w-7xl mx-auto">
@@ -262,7 +262,7 @@ export default function LandingPage() {
 
       {/* Bank Account Integration */}
       <section 
-        ref={(el) => (sectionRefs.current[2] = el)}
+        ref={(el) => { sectionRefs.current[2] = el }}
         className="scroll-section min-h-screen flex items-center py-32 px-6 bg-gradient-to-br from-purple-50/30 to-blue-50/30"
       >
         <div className="max-w-7xl mx-auto">
@@ -349,7 +349,7 @@ export default function LandingPage() {
 
       {/* Spending Analytics */}
       <section 
-        ref={(el) => (sectionRefs.current[3] = el)}
+        ref={(el) => { sectionRefs.current[3] = el }}
         className="scroll-section min-h-screen flex items-center py-32 px-6 bg-gradient-to-br from-purple-50/30 to-blue-50/30"
       >
         <div className="max-w-7xl mx-auto">
@@ -441,7 +441,7 @@ export default function LandingPage() {
 
       {/* Budget Tracking */}
       <section 
-        ref={(el) => (sectionRefs.current[4] = el)}
+        ref={(el) => { sectionRefs.current[4] = el }}
         className="scroll-section min-h-screen flex items-center py-32 px-6 bg-gradient-to-br from-blue-50/30 to-purple-50/30"
       >
         <div className="max-w-7xl mx-auto">
@@ -524,7 +524,7 @@ export default function LandingPage() {
 
       {/* Security */}
       <section 
-        ref={(el) => (sectionRefs.current[5] = el)}
+        ref={(el) => { sectionRefs.current[5] = el }}
         className="scroll-section min-h-screen flex items-center py-32 px-6 bg-gradient-to-br from-purple-50/30 to-blue-50/30"
       >
         <div className="max-w-7xl mx-auto">

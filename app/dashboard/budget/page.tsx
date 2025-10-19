@@ -40,6 +40,10 @@ interface BudgetData {
   period: string
   month: string
   transactionCount: number
+  dateRange?: {
+    start: string
+    end: string
+  }
 }
 
 export default function BudgetPage() {

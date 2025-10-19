@@ -123,7 +123,7 @@ export default function AnalyticsContent({ accounts, transactions, monthlyTransa
   // For credit accounts: positive amounts are charges (spending)
   const totalSpending = filteredTransactions
     .filter(t => {
-      const account = accounts.find(a => a.id === t.accountId)
+      const account = accounts.find(a => a.id === (t as any).account?.id)
       if (!account) return false
       
       if (account.type === 'depository') {
@@ -138,7 +138,7 @@ export default function AnalyticsContent({ accounts, transactions, monthlyTransa
   // Calculate income (money coming in - only from bank accounts) using filtered transactions
   const totalIncome = filteredTransactions
     .filter(t => {
-      const account = accounts.find(a => a.id === t.accountId)
+      const account = accounts.find(a => a.id === (t as any).account?.id)
       if (!account) return false
       
       // Only consider depository accounts (bank accounts) for income
@@ -149,7 +149,7 @@ export default function AnalyticsContent({ accounts, transactions, monthlyTransa
 
   // Calculate monthly spending trend
   const monthlySpending = monthlyTransactions.reduce((acc, transaction) => {
-    const account = accounts.find(a => a.id === transaction.accountId)
+    const account = accounts.find(a => a.id === (transaction as any).account?.id)
     if (!account) return acc
     
     let isSpending = false
@@ -276,7 +276,7 @@ export default function AnalyticsContent({ accounts, transactions, monthlyTransa
   // Calculate spending by category with improved categorization using filtered transactions
   const categorySpending = filteredTransactions
     .filter(t => {
-      const account = accounts.find(a => a.id === t.accountId)
+      const account = accounts.find(a => a.id === (t as any).account?.id)
       if (!account) return false
       
       if (account.type === 'depository') {
@@ -344,7 +344,7 @@ export default function AnalyticsContent({ accounts, transactions, monthlyTransa
   // Calculate spending by account
   const spendingByAccount = transactions
     .filter(t => {
-      const account = accounts.find(a => a.id === t.accountId)
+      const account = accounts.find(a => a.id === (t as any).account?.id)
       if (!account) return false
       
       if (account.type === 'depository') {
@@ -380,7 +380,7 @@ export default function AnalyticsContent({ accounts, transactions, monthlyTransa
   // Get transactions for selected category using filtered transactions
   const getTransactionsForCategory = (categoryName: string) => {
     return filteredTransactions.filter(transaction => {
-      const account = accounts.find(a => a.id === transaction.accountId)
+      const account = accounts.find(a => a.id === (transaction as any).account?.id)
       if (!account) return false
       
       // Check if this is a spending transaction based on account type
@@ -827,7 +827,7 @@ export default function AnalyticsContent({ accounts, transactions, monthlyTransa
                           <p className="font-medium text-red-600">
                             {formatCurrency(Math.abs(transaction.amount))}
                           </p>
-                          {transaction.pending && (
+                          {(transaction as any).pending && (
                             <p className="text-xs text-yellow-600">Pending</p>
                           )}
                         </div>

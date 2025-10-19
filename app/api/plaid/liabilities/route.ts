@@ -82,15 +82,6 @@ export async function GET(request: NextRequest) {
                 nextMonthlyPayment: credit.next_monthly_payment,
                 interestRatePercentage: credit.interest_rate_percentage,
                 interestRateType: credit.interest_rate_type,
-                lastPaymentAmount: credit.last_payment_amount,
-                lastPaymentDate: credit.last_payment_date,
-                minimumPaymentAmount: credit.minimum_payment_amount,
-                nextPaymentDueDate: credit.next_payment_due_date,
-                lastStatementBalance: credit.last_statement_balance,
-                lastStatementDate: credit.last_statement_date,
-                nextMonthlyPayment: credit.next_monthly_payment,
-                interestRatePercentage: credit.interest_rate_percentage,
-                interestRateType: credit.interest_rate_type,
               })
             }
           }

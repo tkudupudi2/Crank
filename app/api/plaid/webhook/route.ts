@@ -47,9 +47,14 @@ export async function POST(request: NextRequest) {
 
     // Generate webhook ID for idempotency
     webhookId = webhook_id || `${webhook_type}_${webhook_code}_${item_id}_${Date.now()}`
+    
+    // Ensure webhookId is always a string
+    if (!webhookId) {
+      webhookId = `unknown_${Date.now()}`
+    }
 
     // Check if webhook was already processed (idempotency)
-    if (processedWebhooks.has(webhookId)) {
+    if (webhookId && processedWebhooks.has(webhookId)) {
       console.log(`Webhook ${webhookId} already processed, skipping`)
       return NextResponse.json({ status: 'ok', message: 'Already processed' })
     }
@@ -212,63 +217,8 @@ async function fetchTransactionsForItem(itemId: string, webhookCode: string) {
           continue
         }
 
-        // Determine correct amount based on transaction direction
+        // Use amount as-is (Plaid provides correct signs)
         let correctedAmount = transaction.amount
-        
-        // If direction is available, use it to determine correct polarity
-        if (transaction.direction) {
-          if (transaction.direction === 'OUTFLOW') {
-            if (account.type === 'credit') {
-              // For credit cards, OUTFLOW could be either charges or payments
-              const isPaymentTransaction = transaction.name.toLowerCase().includes('payment') ||
-                                         transaction.name.toLowerCase().includes('thank')
-              if (isPaymentTransaction) {
-                // Credit card payments should be negative (reduce debt)
-                correctedAmount = -Math.abs(transaction.amount)
-              } else {
-                // Credit card charges should be positive (increase debt)
-                correctedAmount = Math.abs(transaction.amount)
-              }
-            } else {
-              // Money going out (expense) should be negative
-              correctedAmount = -Math.abs(transaction.amount)
-            }
-          } else if (transaction.direction === 'INFLOW') {
-            if (account.type === 'credit') {
-              // For credit cards, INFLOW could be payments (which should be negative)
-              const isPaymentTransaction = transaction.name.toLowerCase().includes('payment') ||
-                                         transaction.name.toLowerCase().includes('thank')
-              if (isPaymentTransaction) {
-                // Credit card payments should be negative (reduce debt)
-                correctedAmount = -Math.abs(transaction.amount)
-              } else {
-                // Credit card refunds should be negative (reduce debt)
-                correctedAmount = -Math.abs(transaction.amount)
-              }
-            } else {
-              // Money coming in (income/refund) should be positive
-              correctedAmount = Math.abs(transaction.amount)
-            }
-          }
-        } else {
-          // Fallback logic for accounts without direction field
-          if (account.type === 'depository') {
-            // For checking/savings accounts, positive amounts are typically expenses (should be negative)
-            correctedAmount = -Math.abs(transaction.amount)
-          } else if (account.type === 'credit') {
-            // For credit accounts, handle payments specially
-            const isPaymentTransaction = transaction.name.toLowerCase().includes('payment') ||
-                                       transaction.name.toLowerCase().includes('thank')
-            
-            if (isPaymentTransaction) {
-              // Credit card payments should always be negative (reduce debt)
-              correctedAmount = -Math.abs(transaction.amount)
-            } else {
-              // Credit card charges should be positive (increase debt)
-              correctedAmount = Math.abs(transaction.amount)
-            }
-          }
-        }
 
         await prisma.transaction.upsert({
           where: { plaidTransactionId: transaction.transaction_id },
@@ -277,7 +227,7 @@ async function fetchTransactionsForItem(itemId: string, webhookCode: string) {
             description: transaction.name,
             merchantName: transaction.merchant_name,
             category: transaction.category || [],
-            subcategory: transaction.subcategory,
+            subcategory: null,
             date: new Date(transaction.date),
             pending: transaction.pending,
           },
@@ -289,7 +239,7 @@ async function fetchTransactionsForItem(itemId: string, webhookCode: string) {
             description: transaction.name,
             merchantName: transaction.merchant_name,
             category: transaction.category || [],
-            subcategory: transaction.subcategory,
+            subcategory: null,
             date: new Date(transaction.date),
             pending: transaction.pending,
             accountOwner: transaction.account_owner,
@@ -396,6 +346,7 @@ async function handleNewAccountsAvailable(itemId: string) {
             userId: plaidItem.userId,
             plaidItemId: plaidItem.id,
             plaidAccountId: account.account_id,
+            institutionId: plaidItem.institutionId,
             name: account.name,
             type: account.type as any,
             subtype: account.subtype as any,
@@ -438,6 +389,8 @@ async function updateLiabilities(itemId: string) {
 
     // Update credit card liabilities
     for (const credit of liabilities.credit || []) {
+      if (!credit.account_id) continue;
+      
       const account = await prisma.account.findFirst({
         where: { plaidAccountId: credit.account_id },
       })
@@ -481,6 +434,8 @@ async function updateLiabilities(itemId: string) {
 
     // Update student loan liabilities
     for (const student of liabilities.student || []) {
+      if (!student.account_id) continue;
+      
       const account = await prisma.account.findFirst({
         where: { plaidAccountId: student.account_id },
       })
@@ -489,7 +444,7 @@ async function updateLiabilities(itemId: string) {
         await prisma.account.update({
           where: { id: account.id },
           data: {
-            sequenceNumber: student.sequence_number,
+            sequenceNumber: student.sequence_number ? parseInt(student.sequence_number.toString()) : null,
             originalTerm: student.original_term,
             repaymentPlan: JSON.stringify(student.repayment_plan || {}),
             servicerAddress: JSON.stringify(student.servicer_address || {}),

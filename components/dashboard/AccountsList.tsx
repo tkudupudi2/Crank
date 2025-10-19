@@ -18,7 +18,7 @@ interface Account {
   mask: string | null
   institutionName: string
   currencyCode: string
-  dueDate: Date | null
+  dueDate: string | null
   minimumPayment: number | null
   // Additional liability fields
   creditLimit?: number | null
@@ -36,8 +36,8 @@ interface Account {
   interestRatePercentage?: number | null
   interestRateType?: string | null
   originalTerm?: number | null
-  maturityDate?: Date | null
-  originationDate?: Date | null
+  maturityDate?: string | null
+  originationDate?: string | null
   originationPrincipalAmount?: number | null
   principalBalance?: number | null
   propertyAddress?: any | null
@@ -94,7 +94,7 @@ export default function AccountsList({ accounts, creditCards, bankAccounts, mort
     return type === 'credit' ? 'text-red-600' : 'text-green-600'
   }
 
-  const formatDate = (date: Date | null) => {
+  const formatDate = (date: string | Date | null) => {
     if (!date) return 'Not set'
     return new Date(date).toLocaleDateString('en-US', {
       month: 'short',
@@ -1397,7 +1397,7 @@ export default function AccountsList({ accounts, creditCards, bankAccounts, mort
             mask: selectedAccountForPayment.mask,
             institutionName: selectedAccountForPayment.institutionName,
             currentBalance: selectedAccountForPayment.currentBalance || 0,
-            dueDate: selectedAccountForPayment.dueDate?.toISOString() || null,
+            dueDate: selectedAccountForPayment.dueDate || null,
             minimumPayment: selectedAccountForPayment.minimumPayment,
             daysUntilDue: selectedAccountForPayment.dueDate 
               ? Math.ceil((new Date(selectedAccountForPayment.dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))

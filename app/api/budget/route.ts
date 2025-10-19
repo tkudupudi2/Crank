@@ -268,23 +268,23 @@ export async function GET() {
       sortedCategories = budgetData.sort((a, b) => b.spent - a.spent)
     }
 
+    // Parse budget preferences from user preferences
+    const budgetPrefs = userPreferences?.budgetPreferences as any || {
+      totalBudget: 0,
+      duration: 'monthly',
+      customStartDate: '',
+      customEndDate: ''
+    }
+
     // Use user's total budget preference if set, otherwise calculate from categories
     let totalBudget
-    if (userPreferences?.budgetPreferences?.totalBudget > 0) {
-      totalBudget = userPreferences.budgetPreferences.totalBudget
+    if (budgetPrefs?.totalBudget > 0) {
+      totalBudget = budgetPrefs.totalBudget
       console.log('Budget API - Using user total budget:', totalBudget)
     } else {
       totalBudget = sortedCategories.reduce((sum, category) => sum + category.budget, 0)
       console.log('Budget API - Calculated total budget from categories:', totalBudget)
     }
-
-      // Parse budget preferences from user preferences
-      const budgetPrefs = userPreferences?.budgetPreferences as any || {
-        totalBudget: 0,
-        duration: 'monthly',
-        customStartDate: '',
-        customEndDate: ''
-      }
 
       return NextResponse.json({
         success: true,
@@ -293,7 +293,7 @@ export async function GET() {
           totalSpent: Math.round(totalSpent * 100) / 100,
           remaining: Math.round((totalBudget - totalSpent) * 100) / 100,
           categories: sortedCategories,
-          period: userPreferences?.budgetPreferences?.duration || 'monthly',
+          period: budgetPrefs?.duration || 'monthly',
           month: periodLabel,
           transactionCount: transactions.length,
           preferences: budgetPrefs,

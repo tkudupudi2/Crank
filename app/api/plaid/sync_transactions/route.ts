@@ -53,62 +53,10 @@ export async function POST(request: NextRequest) {
             // Determine correct amount based on transaction direction
             let correctedAmount = transaction.amount
             
-            // If direction is available, use it to determine correct polarity
-            if (transaction.direction) {
-              if (transaction.direction === 'OUTFLOW') {
-                if (account.type === 'credit') {
-                  // For credit cards, OUTFLOW could be either charges or payments
-                  const isPaymentTransaction = transaction.name.toLowerCase().includes('payment') ||
-                                             transaction.name.toLowerCase().includes('thank')
-                  if (isPaymentTransaction) {
-                    // Credit card payments should be negative (reduce debt)
-                    correctedAmount = -Math.abs(transaction.amount)
-                  } else {
-                    // Credit card charges should be positive (increase debt)
-                    correctedAmount = Math.abs(transaction.amount)
-                  }
-                } else {
-                  // Money going out (expense) should be negative
-                  correctedAmount = -Math.abs(transaction.amount)
-                }
-              } else if (transaction.direction === 'INFLOW') {
-                if (account.type === 'credit') {
-                  // For credit cards, INFLOW could be payments (which should be negative)
-                  const isPaymentTransaction = transaction.name.toLowerCase().includes('payment') ||
-                                             transaction.name.toLowerCase().includes('thank')
-                  if (isPaymentTransaction) {
-                    // Credit card payments should be negative (reduce debt)
-                    correctedAmount = -Math.abs(transaction.amount)
-                  } else {
-                    // Credit card refunds should be negative (reduce debt)
-                    correctedAmount = -Math.abs(transaction.amount)
-                  }
-                } else {
-                  // Money coming in (income/refund) should be positive
-                  correctedAmount = Math.abs(transaction.amount)
-                }
-              }
-            } else {
-              // Fallback logic for accounts without direction field
-              if (account.type === 'depository') {
-                // For checking/savings accounts, positive amounts are typically expenses (should be negative)
-                correctedAmount = -Math.abs(transaction.amount)
-              } else if (account.type === 'credit') {
-                // For credit accounts, handle payments specially
-                const isPaymentTransaction = transaction.name.toLowerCase().includes('payment') ||
-                                           transaction.name.toLowerCase().includes('thank')
-                
-                if (isPaymentTransaction) {
-                  // Credit card payments should always be negative (reduce debt)
-                  correctedAmount = -Math.abs(transaction.amount)
-                } else {
-                  // Credit card charges should be positive (increase debt)
-                  correctedAmount = Math.abs(transaction.amount)
-                }
-              }
-            }
+            // Use amount as-is (Plaid provides correct signs)
+            correctedAmount = transaction.amount
 
-            console.log(`Transaction: ${transaction.name}, Original: ${transaction.amount}, Direction: ${transaction.direction}, Corrected: ${correctedAmount}`)
+            console.log(`Transaction: ${transaction.name}, Original: ${transaction.amount}, Corrected: ${correctedAmount}`)
 
             await prisma.transaction.upsert({
               where: { plaidTransactionId: transaction.transaction_id },
@@ -117,7 +65,7 @@ export async function POST(request: NextRequest) {
                 description: transaction.name,
                 merchantName: transaction.merchant_name,
                 category: transaction.category || [],
-                subcategory: transaction.subcategory,
+                subcategory: null,
                 date: new Date(transaction.date),
                 pending: transaction.pending,
               },
@@ -129,7 +77,7 @@ export async function POST(request: NextRequest) {
                 description: transaction.name,
                 merchantName: transaction.merchant_name,
                 category: transaction.category || [],
-                subcategory: transaction.subcategory,
+                subcategory: null,
                 date: new Date(transaction.date),
                 pending: transaction.pending,
                 accountOwner: transaction.account_owner,

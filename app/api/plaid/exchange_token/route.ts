@@ -304,7 +304,7 @@ export async function POST(request: NextRequest) {
             creditLimit: account.type === 'credit' ? creditLimit : undefined,
             lastPaymentAmount: lastPaymentAmount,
             lastPaymentDate: lastPaymentDate,
-            aprs: account.type === 'credit' ? aprs : undefined,
+            aprs: account.type === 'credit' ? (aprs || undefined) : undefined,
             // Mortgage fields
             originalBalance: account.subtype === 'mortgage' ? originalBalance : undefined,
             escrowBalance: account.subtype === 'mortgage' ? escrowBalance : undefined,
@@ -315,13 +315,13 @@ export async function POST(request: NextRequest) {
             originationDate: account.subtype === 'mortgage' ? originationDate : undefined,
             originationPrincipalAmount: account.subtype === 'mortgage' ? originationPrincipalAmount : undefined,
             principalBalance: account.subtype === 'mortgage' ? principalBalance : undefined,
-            propertyAddress: account.subtype === 'mortgage' ? (propertyAddress ? JSON.stringify(propertyAddress) : null) : undefined,
+            propertyAddress: account.subtype === 'mortgage' ? (propertyAddress || undefined) : undefined,
             ytdInterestPaid: (account.subtype === 'mortgage' || account.subtype === 'student') ? ytdInterestPaid : undefined,
             ytdPrincipalPaid: (account.subtype === 'mortgage' || account.subtype === 'student') ? ytdPrincipalPaid : undefined,
             // Student loan fields
-            repaymentPlan: account.subtype === 'student' ? (repaymentPlan ? JSON.stringify(repaymentPlan) : null) : undefined,
+            repaymentPlan: account.subtype === 'student' ? (repaymentPlan ? repaymentPlan.toString() : null) : undefined,
             sequenceNumber: account.subtype === 'student' ? (sequenceNumber ? parseInt(sequenceNumber.toString()) : null) : undefined,
-            servicerAddress: account.subtype === 'student' ? (servicerAddress ? JSON.stringify(servicerAddress) : null) : undefined,
+            servicerAddress: account.subtype === 'student' ? (servicerAddress || undefined) : undefined,
           },
         })
         existingAccountsCount++
@@ -347,7 +347,7 @@ export async function POST(request: NextRequest) {
             creditLimit: account.type === 'credit' ? creditLimit : undefined,
             lastPaymentAmount: lastPaymentAmount,
             lastPaymentDate: lastPaymentDate,
-            aprs: account.type === 'credit' ? aprs : undefined,
+            aprs: account.type === 'credit' ? (aprs || undefined) : undefined,
             // Mortgage fields
             originalBalance: account.subtype === 'mortgage' ? originalBalance : undefined,
             escrowBalance: account.subtype === 'mortgage' ? escrowBalance : undefined,
@@ -358,13 +358,13 @@ export async function POST(request: NextRequest) {
             originationDate: account.subtype === 'mortgage' ? originationDate : undefined,
             originationPrincipalAmount: account.subtype === 'mortgage' ? originationPrincipalAmount : undefined,
             principalBalance: account.subtype === 'mortgage' ? principalBalance : undefined,
-            propertyAddress: account.subtype === 'mortgage' ? (propertyAddress ? JSON.stringify(propertyAddress) : null) : undefined,
+            propertyAddress: account.subtype === 'mortgage' ? (propertyAddress || undefined) : undefined,
             ytdInterestPaid: (account.subtype === 'mortgage' || account.subtype === 'student') ? ytdInterestPaid : undefined,
             ytdPrincipalPaid: (account.subtype === 'mortgage' || account.subtype === 'student') ? ytdPrincipalPaid : undefined,
             // Student loan fields
-            repaymentPlan: account.subtype === 'student' ? (repaymentPlan ? JSON.stringify(repaymentPlan) : null) : undefined,
+            repaymentPlan: account.subtype === 'student' ? (repaymentPlan ? repaymentPlan.toString() : null) : undefined,
             sequenceNumber: account.subtype === 'student' ? (sequenceNumber ? parseInt(sequenceNumber.toString()) : null) : undefined,
-            servicerAddress: account.subtype === 'student' ? (servicerAddress ? JSON.stringify(servicerAddress) : null) : undefined,
+            servicerAddress: account.subtype === 'student' ? (servicerAddress || undefined) : undefined,
           },
         })
         newAccountsCount++

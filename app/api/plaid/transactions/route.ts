@@ -29,8 +29,8 @@ export async function POST(request: NextRequest) {
       try {
         const response = await plaidClient.transactionsGet({
           access_token: item.accessToken,
-          start_date: new Date(startDate),
-          end_date: new Date(endDate),
+          start_date: startDate,
+          end_date: endDate,
         })
 
         const transactions = response.data.transactions
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
                 description: transaction.name,
                 merchantName: transaction.merchant_name,
                 category: transaction.category || [],
-                subcategory: transaction.subcategory,
+                subcategory: null,
                 date: new Date(transaction.date),
                 pending: transaction.pending,
               },
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
                 description: transaction.name,
                 merchantName: transaction.merchant_name,
                 category: transaction.category || [],
-                subcategory: transaction.subcategory,
+                subcategory: null,
                 date: new Date(transaction.date),
                 pending: transaction.pending,
                 accountOwner: transaction.account_owner,

@@ -450,8 +450,8 @@ export default function NewAccountsPage() {
       // Use same logic as analytics page for determining spending
       // For depository accounts: negative amounts are expenses (spending)
       // For credit accounts: positive amounts are charges (spending)
-      const isSpending = (t.account?.type === 'depository' && t.amount < 0) || 
-                        (t.account?.type === 'credit' && t.amount > 0)
+      const isSpending = ((t as any).account?.type === 'depository' && t.amount < 0) || 
+                        ((t as any).account?.type === 'credit' && t.amount > 0)
       
       // Exclude payment transactions (payments from bank accounts to credit cards)
       const description = t.description.toLowerCase()
@@ -480,7 +480,7 @@ export default function NewAccountsPage() {
     
     // Debug: Show account type breakdown
     const accountTypeBreakdown = transactions.reduce((acc, t) => {
-      const accountType = t.account?.type || 'unknown'
+      const accountType = (t as any).account?.type || 'unknown'
       acc[accountType] = (acc[accountType] || 0) + 1
       return acc
     }, {} as Record<string, number>)
@@ -490,16 +490,16 @@ export default function NewAccountsPage() {
     console.log('Sample transactions with account info:', transactions.slice(0, 5).map(t => ({
       description: t.description,
       amount: t.amount,
-      accountType: t.account?.type,
-      accountName: t.account?.name,
+      accountType: (t as any).account?.type,
+      accountName: (t as any).account?.name,
       merchantName: t.merchantName
     })))
     
     // Debug: Show filtered out payment transactions
     const paymentTransactions = transactions.filter(t => {
       const isWithinDateRange = new Date(t.date) >= oneYearAgo
-      const isSpending = (t.account?.type === 'depository' && t.amount < 0) || 
-                        (t.account?.type === 'credit' && t.amount > 0)
+      const isSpending = ((t as any).account?.type === 'depository' && t.amount < 0) || 
+                        ((t as any).account?.type === 'credit' && t.amount > 0)
       
       const description = t.description.toLowerCase()
       const merchantName = t.merchantName?.toLowerCase() || ''
@@ -537,8 +537,8 @@ export default function NewAccountsPage() {
     console.log('Sample spending transactions:', recentTransactions.slice(0, 5).map(t => ({
       description: t.description,
       amount: t.amount,
-      accountType: t.account?.type,
-      accountName: t.account?.name,
+      accountType: (t as any).account?.type,
+      accountName: (t as any).account?.name,
       merchantName: t.merchantName
     })))
 
