@@ -7,17 +7,23 @@ const globalForPrisma = globalThis as unknown as {
 function createPrismaClient() {
   // Check if DATABASE_URL is actually available and not empty
   const databaseUrl = process.env.DATABASE_URL
+  console.log('Creating Prisma client - DATABASE_URL available:', !!databaseUrl)
+  console.log('Creating Prisma client - NODE_ENV:', process.env.NODE_ENV)
+  console.log('Creating Prisma client - VERCEL:', process.env.VERCEL)
+  
   if (!databaseUrl || databaseUrl.trim() === '') {
     console.warn('DATABASE_URL not available or empty, using mock Prisma client')
     return createMockPrismaClient()
   }
 
-  console.log('Creating Prisma client with DATABASE_URL:', databaseUrl.substring(0, 20) + '...')
+  console.log('Creating real Prisma client with DATABASE_URL:', databaseUrl.substring(0, 20) + '...')
 
   try {
-    return new PrismaClient({
+    const client = new PrismaClient({
       log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
     })
+    console.log('Prisma client created successfully')
+    return client
   } catch (error) {
     console.warn('Failed to create Prisma client, using mock:', error)
     return createMockPrismaClient()
@@ -55,9 +61,17 @@ function createMockPrismaClient() {
   } as any
 }
 
-// Simple initialization - create client immediately
-export const prisma = globalForPrisma.prisma ?? createPrismaClient()
+// Lazy initialization - only create when actually needed
+let _prisma: PrismaClient | any = null
 
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma
-}
+export const prisma = new Proxy({} as any, {
+  get(target, prop) {
+    if (!_prisma) {
+      _prisma = globalForPrisma.prisma ?? createPrismaClient()
+      if (process.env.NODE_ENV !== 'production') {
+        globalForPrisma.prisma = _prisma
+      }
+    }
+    return _prisma[prop]
+  }
+})
