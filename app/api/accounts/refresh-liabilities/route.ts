@@ -42,6 +42,9 @@ export async function POST(request: NextRequest) {
         // Process credit card liabilities
         if (liabilities.credit && liabilities.credit.length > 0) {
           for (const credit of liabilities.credit) {
+            // Skip if account_id is null
+            if (!credit.account_id) continue;
+            
             // Find the corresponding account in our database
             const account = await prisma.account.findFirst({
               where: { plaidAccountId: credit.account_id }
@@ -82,6 +85,9 @@ export async function POST(request: NextRequest) {
         // Process mortgage liabilities
         if (liabilities.mortgage && liabilities.mortgage.length > 0) {
           for (const mortgage of liabilities.mortgage) {
+            // Skip if account_id is null
+            if (!mortgage.account_id) continue;
+            
             const account = await prisma.account.findFirst({
               where: { plaidAccountId: mortgage.account_id }
             })
@@ -143,6 +149,9 @@ export async function POST(request: NextRequest) {
         // Process student loan liabilities
         if (liabilities.student && liabilities.student.length > 0) {
           for (const student of liabilities.student) {
+            // Skip if account_id is null
+            if (!student.account_id) continue;
+            
             const account = await prisma.account.findFirst({
               where: { plaidAccountId: student.account_id }
             })
