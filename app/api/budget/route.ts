@@ -102,7 +102,7 @@ export async function GET() {
     
     // Debug: Log first few transactions to see actual dates
     console.log('Budget API - Sample transactions with dates:')
-    transactions.slice(0, 3).forEach((tx, index) => {
+    transactions.slice(0, 3).forEach((tx: any, index: number) => {
       console.log(`${index + 1}. ${tx.merchantName || tx.description} - Date: ${tx.date.toISOString()} - Amount: $${Math.abs(tx.amount)}`)
     })
 
@@ -141,7 +141,7 @@ export async function GET() {
     })
 
     // Categorize transactions
-    transactions.forEach(transaction => {
+    transactions.forEach((transaction: any) => {
       const transactionCategories = transaction.category || []
       let categorized = false
 
@@ -155,8 +155,8 @@ export async function GET() {
 
       // Try to match transaction categories to budget categories
       for (const [budgetCategory, plaidCategories] of Object.entries(budgetCategories)) {
-        if (transactionCategories.some(cat => 
-          plaidCategories.some(plaidCat => 
+        if (transactionCategories.some((cat: any) => 
+          plaidCategories.some((plaidCat: any) => 
             cat.toLowerCase().includes(plaidCat.toLowerCase())
           )
         )) {

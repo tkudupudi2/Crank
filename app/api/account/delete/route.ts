@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 
 export async function DELETE(request: NextRequest) {
   const session = await getServerSession(authOptions)
@@ -14,7 +15,7 @@ export async function DELETE(request: NextRequest) {
     const userId = (session.user as any).id
 
     // Delete all user-related data in the correct order to avoid foreign key constraints
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Delete user preferences
       await tx.userPreferences.deleteMany({
         where: { userId }

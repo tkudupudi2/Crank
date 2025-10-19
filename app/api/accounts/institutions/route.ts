@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    const institutions = plaidItems.map(item => item.institutionName)
+    const institutions = plaidItems.map((item: any) => item.institutionName)
 
     return NextResponse.json({ institutions })
   } catch (error) {

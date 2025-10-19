@@ -138,12 +138,12 @@ export async function GET(request: Request) {
     
     // Debug: Log all transactions to see what we have
     console.log('All transactions in date range:')
-    allTransactions.forEach((tx, index) => {
+    allTransactions.forEach((tx: any, index: number) => {
       console.log(`${index + 1}. ${tx.merchantName || tx.description} - $${Math.abs(tx.amount)} - Categories: ${tx.category?.join(', ') || 'None'} - Account: ${tx.account?.name || 'Unknown'} - Date: ${tx.date.toISOString()}`)
     })
 
     // Filter transactions by category
-    const transactions = allTransactions.filter(transaction => {
+    const transactions = allTransactions.filter((transaction: any) => {
       // Determine if this is a spending transaction based on account type and amount
       const isCreditCard = transaction.account?.type === 'credit'
       const isSpending = isCreditCard ? transaction.amount > 0 : transaction.amount < 0
@@ -155,8 +155,8 @@ export async function GET(request: Request) {
       const transactionCategories = transaction.category || []
       
       // Check if any of the transaction categories match our target categories
-      const categoryMatch = transactionCategories.some(cat => 
-        plaidCategories.some(plaidCat => 
+      const categoryMatch = transactionCategories.some((cat: any) => 
+        plaidCategories.some((plaidCat: any) => 
           cat.toLowerCase().includes(plaidCat.toLowerCase())
         )
       )
