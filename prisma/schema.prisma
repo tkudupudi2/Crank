@@ -3,6 +3,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  engineType = "library"
 }
 
 datasource db {
@@ -31,13 +32,13 @@ model User {
 model Account {
   id              String    @id @default(cuid())
   userId          String
-  plaidAccountId  String    @unique
-  plaidItemId     String
-  institutionId   String
+  plaidAccountId  String?   @unique // Made optional for virtual accounts
+  plaidItemId     String?   // Made optional for virtual accounts
+  institutionId   String?   // Made optional for virtual accounts
   institutionName String
   name            String
-  type            String    // 'credit', 'depository', 'loan', 'investment'
-  subtype         String?   // 'credit_card', 'checking', 'savings', 'mortgage', 'student', etc.
+  type            String    // 'credit', 'depository', 'loan', 'investment', 'other'
+  subtype         String?   // 'credit_card', 'checking', 'savings', 'mortgage', 'student', 'cash', 'other', etc.
   mask            String?   // Last 4 digits
   currentBalance  Float?
   availableBalance Float?
@@ -68,6 +69,7 @@ model Account {
   servicerAddress Json?     // For student loans: servicer address as JSON
   lastUpdated     DateTime? // Last time account data was updated
   isActive        Boolean   @default(true)
+  isVirtual       Boolean   @default(false) // For manual/virtual accounts
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -94,6 +96,14 @@ model Transaction {
   date            DateTime
   pending         Boolean   @default(false)
   accountOwner    String?
+  isManual        Boolean   @default(false) // For manually added transactions
+  // Location fields from Plaid
+  address         String?   // Street address
+  city            String?   // City
+  region          String?   // State or province
+  postalCode      String?   // Postal/ZIP code
+  country         String?   // Country code
+  storeNumber     String?   // Store number
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 

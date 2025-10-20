@@ -170,7 +170,14 @@ export default async function TransactionsPage() {
                     subcategory: (transaction as any).subcategory,
                     date: new Date(transaction.date),
                     pending: transaction.pending,
-                  },
+                    // Location data
+                    address: transaction.location?.address || null,
+                    city: transaction.location?.city || null,
+                    region: transaction.location?.region || null,
+                    postalCode: transaction.location?.postal_code || null,
+                    country: transaction.location?.country || null,
+                    storeNumber: (transaction as any).store_number || null,
+                  } as any,
                   create: {
                     userId: userId,
                     accountId: account.id,
@@ -183,7 +190,14 @@ export default async function TransactionsPage() {
                     date: new Date(transaction.date),
                     pending: transaction.pending,
                     accountOwner: transaction.account_owner,
-                  },
+                    // Location data
+                    address: transaction.location?.address || null,
+                    city: transaction.location?.city || null,
+                    region: transaction.location?.region || null,
+                    postalCode: transaction.location?.postal_code || null,
+                    country: transaction.location?.country || null,
+                    storeNumber: (transaction as any).store_number || null,
+                  } as any,
                 })
                 totalTransactions++
               }
@@ -247,6 +261,9 @@ export default async function TransactionsPage() {
 
   const accounts = await prisma.account.findMany({
     where: { userId: userId, isActive: true },
+    orderBy: [
+      { name: 'asc' }
+    ]
   })
 
          return (
@@ -269,7 +286,7 @@ export default async function TransactionsPage() {
                )}
              </div>
 
-             <TransactionsList transactions={transactions} accounts={accounts} />
+             <TransactionsList transactions={transactions as any} accounts={accounts} />
            </div>
          )
 }

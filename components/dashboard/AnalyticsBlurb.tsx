@@ -12,6 +12,7 @@ interface Transaction {
   merchantName: string | null
   category: string[] | null
   date: Date
+  isManual?: boolean
   account: {
     id: string
     type: string
@@ -62,6 +63,9 @@ export default function AnalyticsBlurb({ transactions, accounts }: AnalyticsBlur
       } else if (account.type === 'credit' && transaction.amount > 0) {
         isSpending = true // Positive amounts are charges for credit cards
       }
+    } else if ((transaction as any).isManual) {
+      // Manual transactions are always expenses (negative amounts)
+      isSpending = transaction.amount < 0
     }
     
     const isCurrentMonth = transactionDate.getMonth() === currentMonth && 
@@ -99,6 +103,9 @@ export default function AnalyticsBlurb({ transactions, accounts }: AnalyticsBlur
       } else if (account.type === 'credit' && transaction.amount > 0) {
         isSpending = true
       }
+    } else if ((transaction as any).isManual) {
+      // Manual transactions are always expenses (negative amounts)
+      isSpending = transaction.amount < 0
     }
     
     return isSpending && 

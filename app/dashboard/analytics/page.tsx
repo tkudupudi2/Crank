@@ -13,9 +13,13 @@ export default async function AnalyticsPage() {
 
   const userId = (session?.user as any)?.id
 
-  // Get user's accounts
+  // Get user's accounts (exclude virtual accounts for balance calculations)
   const accounts = await prisma.account.findMany({
-    where: { userId: userId, isActive: true },
+    where: { 
+      userId: userId, 
+      isActive: true,
+      isVirtual: false // Exclude virtual accounts for balance/net worth calculations
+    } as any,
     orderBy: { createdAt: 'desc' },
   })
 
@@ -48,7 +52,8 @@ export default async function AnalyticsPage() {
     orderBy: { date: 'desc' },
   })
 
-  if (!accounts.length) {
+  // Check if we have any data for analytics (accounts OR transactions)
+  if (!accounts.length && !transactions.length) {
     return (
       <div className="space-y-6">
         <div>

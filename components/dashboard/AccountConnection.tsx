@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
-import { CreditCard, Building2, Shield, CheckCircle, AlertCircle } from 'lucide-react'
+import { CreditCard, Building2, Shield, CheckCircle, AlertCircle, ChevronDown, Wallet, CreditCard as CreditCardIcon } from 'lucide-react'
 
 declare global {
   interface Window {
@@ -20,6 +20,8 @@ export default function AccountConnection({ compact = false }: AccountConnection
   const [isConnecting, setIsConnecting] = useState(false)
   const [error, setError] = useState('')
   const [connectedInstitutions, setConnectedInstitutions] = useState<string[]>([])
+  const [showDropdown, setShowDropdown] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
   // Fetch connected institutions
@@ -37,6 +39,20 @@ export default function AccountConnection({ compact = false }: AccountConnection
     }
 
     fetchConnectedInstitutions()
+  }, [])
+
+  // Handle dropdown click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
   }, [])
 
   useEffect(() => {
@@ -58,17 +74,19 @@ export default function AccountConnection({ compact = false }: AccountConnection
     }
   }, [])
 
-  const handleConnectAccounts = async () => {
+  const handleConnectAccounts = async (accountType: 'depository' | 'liability') => {
     setIsConnecting(true)
     setError('')
+    setShowDropdown(false)
     
     try {
-      // Create link token
+      // Create link token with specific account type
       const response = await fetch('/api/plaid/link_token', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ accountType }),
       })
       
       if (!response.ok) {
@@ -170,13 +188,49 @@ export default function AccountConnection({ compact = false }: AccountConnection
           )}
         </CardHeader>
         <CardContent className="space-y-4">
-          <Button 
-            onClick={handleConnectAccounts}
-            disabled={isConnecting}
-            className="w-full"
-          >
-            {isConnecting ? 'Connecting...' : 'Connect New Account'}
-          </Button>
+          <div className="relative" ref={dropdownRef}>
+            <Button 
+              onClick={() => setShowDropdown(!showDropdown)}
+              disabled={isConnecting}
+              className="w-full"
+            >
+              {isConnecting ? 'Connecting...' : 'Connect New Account'}
+            </Button>
+            
+            {showDropdown && !isConnecting && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                <div className="py-2">
+                  <button
+                    onClick={() => handleConnectAccounts('depository')}
+                    className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center space-x-3"
+                  >
+                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Wallet className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900">Checking/Savings</div>
+                      <div className="text-sm text-gray-500">Bank accounts</div>
+                    </div>
+                  </button>
+                  
+                  <div className="border-t border-gray-100"></div>
+                  
+                  <button
+                    onClick={() => handleConnectAccounts('liability')}
+                    className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center space-x-3"
+                  >
+                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                      <CreditCardIcon className="h-4 w-4 text-green-600" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900">Credit Cards/Loans</div>
+                      <div className="text-sm text-gray-500">Credit cards, loans</div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
           
           {error && (
             <div className={`p-3 border rounded-lg ${
@@ -219,7 +273,7 @@ export default function AccountConnection({ compact = false }: AccountConnection
           </div>
           <CardTitle className="text-2xl">Connect Your Accounts</CardTitle>
           <CardDescription className="text-lg">
-            Link your bank accounts and credit cards to get started with Crank
+            Connect your bank accounts, credit cards, and loans to get started with Crank
           </CardDescription>
           {connectedInstitutions.length > 0 && (
             <div className="mt-4 p-3 bg-blue-50 rounded-lg">
@@ -280,18 +334,59 @@ export default function AccountConnection({ compact = false }: AccountConnection
             </div>
           </div>
 
-          {/* Connect Button */}
+          {/* Connect Button with Dropdown */}
           <div className="text-center">
-            <Button 
-              size="lg" 
-              onClick={handleConnectAccounts}
-              disabled={isConnecting}
-              className="text-lg px-8 py-3"
-            >
-              {isConnecting ? 'Connecting...' : 'Connect Your Accounts'}
-            </Button>
+            <div className="relative inline-block" ref={dropdownRef}>
+              <Button 
+                size="lg" 
+                onClick={(e) => {
+                  e.preventDefault()
+                  setShowDropdown(!showDropdown)
+                }}
+                disabled={isConnecting}
+                className="text-lg px-8 py-3 relative"
+              >
+                {isConnecting ? 'Connecting...' : 'Connect Your Accounts'}
+                <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+              
+              {showDropdown && !isConnecting && (
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                  <div className="py-2">
+                    <button
+                      onClick={() => handleConnectAccounts('depository')}
+                      className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center space-x-3"
+                    >
+                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <Wallet className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <div className="font-medium text-gray-900">Connect Checking/Savings</div>
+                        <div className="text-sm text-gray-500">Bank accounts, savings, checking</div>
+                      </div>
+                    </button>
+                    
+                    <div className="border-t border-gray-100"></div>
+                    
+                    <button
+                      onClick={() => handleConnectAccounts('liability')}
+                      className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center space-x-3"
+                    >
+                      <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                        <CreditCardIcon className="h-5 w-5 text-green-600" />
+                      </div>
+                      <div>
+                        <div className="font-medium text-gray-900">Connect Credit Cards/Loans</div>
+                        <div className="text-sm text-gray-500">Credit cards, loans, mortgages</div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+            
             <p className="text-sm text-muted-foreground mt-4">
-              You'll be redirected to securely connect your accounts using Plaid
+              Choose what type of accounts you want to connect
             </p>
             
             {error && (

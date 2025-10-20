@@ -273,7 +273,32 @@ export default function LiabilitiesList() {
                     {liability.repaymentPlan && (
                       <div>
                         <p className="text-gray-600">Repayment Plan</p>
-                        <p className="font-medium">{liability.repaymentPlan}</p>
+                        <p className="font-medium">
+                          {(() => {
+                            try {
+                              const plan = typeof liability.repaymentPlan === 'string' 
+                                ? JSON.parse(liability.repaymentPlan) 
+                                : liability.repaymentPlan
+                              
+                              // Handle different possible structures
+                              if (typeof plan === 'string') {
+                                return plan.replace(/_/g, ' ')
+                              } else if (typeof plan === 'object' && plan !== null) {
+                                // Try to find a meaningful description
+                                return plan.description || 
+                                       plan.type || 
+                                       plan.name ||
+                                       plan.plan_type ||
+                                       plan.repayment_plan ||
+                                       Object.values(plan).find(v => typeof v === 'string') ||
+                                       'Custom Plan'
+                              }
+                              return liability.repaymentPlan.replace(/_/g, ' ')
+                            } catch {
+                              return liability.repaymentPlan.replace(/_/g, ' ')
+                            }
+                          })()}
+                        </p>
                       </div>
                     )}
                   </div>

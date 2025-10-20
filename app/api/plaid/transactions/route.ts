@@ -35,6 +35,11 @@ export async function POST(request: NextRequest) {
 
         const transactions = response.data.transactions
 
+        // Debug: Log sample transaction data to see what Plaid provides
+        if (transactions.length > 0) {
+          console.log('Sample Plaid transaction data:', JSON.stringify(transactions[0], null, 2))
+        }
+
         // Store transactions in database
         for (const transaction of transactions) {
           const account = await prisma.account.findFirst({
@@ -52,6 +57,13 @@ export async function POST(request: NextRequest) {
                 subcategory: null,
                 date: new Date(transaction.date),
                 pending: transaction.pending,
+                // Location data
+                address: transaction.location?.address || null,
+                city: transaction.location?.city || null,
+                region: transaction.location?.region || null,
+                postalCode: transaction.location?.postal_code || null,
+                country: transaction.location?.country || null,
+                storeNumber: (transaction as any).store_number || null,
               },
               create: {
                 userId: (session.user as any).id,
@@ -65,6 +77,13 @@ export async function POST(request: NextRequest) {
                 date: new Date(transaction.date),
                 pending: transaction.pending,
                 accountOwner: transaction.account_owner,
+                // Location data
+                address: transaction.location?.address || null,
+                city: transaction.location?.city || null,
+                region: transaction.location?.region || null,
+                postalCode: transaction.location?.postal_code || null,
+                country: transaction.location?.country || null,
+                storeNumber: (transaction as any).store_number || null,
               },
             })
 

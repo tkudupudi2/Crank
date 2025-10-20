@@ -5,11 +5,6 @@ import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 
 export async function DELETE(request: NextRequest) {
-  // Skip during build time if prisma is not available
-  if (!prisma) {
-    return NextResponse.json({ error: 'Service unavailable during build' }, { status: 503 })
-  }
-
   const session = await getServerSession(authOptions)
   
   try {

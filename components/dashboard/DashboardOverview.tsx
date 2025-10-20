@@ -7,6 +7,7 @@ import { CreditCard, DollarSign, TrendingUp, ArrowUpRight, ArrowDownRight, Plus 
 import { format } from 'date-fns'
 import Link from 'next/link'
 import AccountConnection from './AccountConnection'
+// removed expandable graphs
 
 interface Account {
   id: string
@@ -26,9 +27,12 @@ interface Transaction {
   merchantName: string | null
   date: Date
   account: {
+    id: string
     name: string
     type: string
+    isVirtual?: boolean
   }
+  isManual?: boolean
 }
 
 interface DashboardOverviewProps {

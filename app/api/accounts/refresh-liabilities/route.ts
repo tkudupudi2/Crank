@@ -184,7 +184,7 @@ export async function POST(request: NextRequest) {
                   originalBalance,
                   interestRatePercentage,
                   interestRateType,
-                  repaymentPlan: repaymentPlan ? repaymentPlan.toString() : null,
+                  repaymentPlan: repaymentPlan ? JSON.stringify(repaymentPlan) : null,
                   sequenceNumber: sequenceNumber ? parseInt(sequenceNumber.toString()) : null,
                   servicerAddress: servicerAddress ? servicerAddress : undefined,
                   ytdInterestPaid,

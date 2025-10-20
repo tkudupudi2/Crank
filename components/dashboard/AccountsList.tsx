@@ -883,7 +883,21 @@ export default function AccountsList({ accounts, creditCards, bankAccounts, mort
                               const plan = typeof account.repaymentPlan === 'string' 
                                 ? JSON.parse(account.repaymentPlan) 
                                 : account.repaymentPlan
-                              return plan.description || plan.type || account.repaymentPlan.replace(/_/g, ' ')
+                              
+                              // Handle different possible structures
+                              if (typeof plan === 'string') {
+                                return plan.replace(/_/g, ' ')
+                              } else if (typeof plan === 'object' && plan !== null) {
+                                // Try to find a meaningful description
+                                return plan.description || 
+                                       plan.type || 
+                                       plan.name ||
+                                       plan.plan_type ||
+                                       plan.repayment_plan ||
+                                       Object.values(plan).find(v => typeof v === 'string') ||
+                                       'Custom Plan'
+                              }
+                              return account.repaymentPlan.replace(/_/g, ' ')
                             } catch {
                               return account.repaymentPlan.replace(/_/g, ' ')
                             }

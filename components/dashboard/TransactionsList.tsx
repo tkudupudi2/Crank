@@ -12,9 +12,16 @@ import {
   Filter,
   Calendar,
   CreditCard,
-  RefreshCw
+  RefreshCw,
+  Plus,
+  Trash2,
+  Edit3,
+  MoreVertical
 } from 'lucide-react'
 import { format } from 'date-fns'
+import AddTransactionModal from './AddTransactionModal'
+import DeleteTransactionModal from './DeleteTransactionModal'
+import EditTransactionModal from './EditTransactionModal'
 
 interface Account {
   id: string
@@ -32,6 +39,14 @@ interface Transaction {
   category: string[]
   date: Date
   pending: boolean
+  isManual: boolean
+  // Location fields
+  address?: string | null
+  city?: string | null
+  region?: string | null
+  postalCode?: string | null
+  country?: string | null
+  storeNumber?: string | null
   account: Account
 }
 
@@ -47,6 +62,10 @@ export default function TransactionsList({ transactions, accounts }: Transaction
   const [selectedDateRange, setSelectedDateRange] = useState('')
   const [isSyncing, setIsSyncing] = useState(false)
   const [syncResult, setSyncResult] = useState<{ success: boolean; message?: string; error?: string } | null>(null)
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
   const router = useRouter()
 
   const formatCurrency = (amount: number) => {
@@ -136,6 +155,28 @@ export default function TransactionsList({ transactions, accounts }: Transaction
     }
   }
 
+  const handleDeleteTransaction = (transaction: Transaction) => {
+    setSelectedTransaction(transaction)
+    setShowDeleteModal(true)
+  }
+
+  const handleEditTransaction = (transaction: Transaction) => {
+    setSelectedTransaction(transaction)
+    setShowEditModal(true)
+  }
+
+  const handleTransactionDeleted = () => {
+    router.refresh()
+    setShowDeleteModal(false)
+    setSelectedTransaction(null)
+  }
+
+  const handleTransactionUpdated = () => {
+    router.refresh()
+    setShowEditModal(false)
+    setSelectedTransaction(null)
+  }
+
   const filteredTransactions = transactions.filter(transaction => {
     const matchesSearch = transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (transaction.merchantName && transaction.merchantName.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -188,16 +229,27 @@ export default function TransactionsList({ transactions, accounts }: Transaction
                 Use filters to find specific transactions
               </CardDescription>
             </div>
-            <Button
-              onClick={handleManualSync}
-              disabled={isSyncing}
-              variant="outline"
-              size="sm"
-              className="flex items-center space-x-2"
-            >
-              <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
-              <span>{isSyncing ? 'Syncing...' : 'Sync Transactions'}</span>
-            </Button>
+            <div className="flex space-x-2">
+              <Button
+                onClick={() => setShowAddModal(true)}
+                variant="default"
+                size="sm"
+                className="flex items-center space-x-2"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Add Transaction</span>
+              </Button>
+              <Button
+                onClick={handleManualSync}
+                disabled={isSyncing}
+                variant="outline"
+                size="sm"
+                className="flex items-center space-x-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                <span>{isSyncing ? 'Syncing...' : 'Sync Transactions'}</span>
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -344,8 +396,8 @@ export default function TransactionsList({ transactions, accounts }: Transaction
           ) : (
             <div className="space-y-3">
               {filteredTransactions.map((transaction) => (
-                <div key={transaction.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-                  <div className="flex items-center space-x-4">
+                <div key={transaction.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors group">
+                  <div className="flex items-center space-x-4 flex-1">
                     <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
                       {transaction.account.type === 'credit' ? (
                         // For credit cards: positive amounts (charges) show red down arrow, negative (payments) show green up arrow
@@ -363,7 +415,7 @@ export default function TransactionsList({ transactions, accounts }: Transaction
                         )
                       )}
                     </div>
-                    <div>
+                    <div className="flex-1">
                       <p className="font-medium">
                         {transaction.merchantName || transaction.description}
                       </p>
@@ -375,6 +427,12 @@ export default function TransactionsList({ transactions, accounts }: Transaction
                           <>
                             <span>•</span>
                             <span className="text-yellow-600">Pending</span>
+                          </>
+                        )}
+                        {transaction.isManual && (
+                          <>
+                            <span>•</span>
+                            <span className="text-orange-600">Manual</span>
                           </>
                         )}
                       </div>
@@ -390,18 +448,54 @@ export default function TransactionsList({ transactions, accounts }: Transaction
                           ))}
                         </div>
                       )}
+                      {/* Location information */}
+                      {(transaction.city || transaction.region || transaction.address) && (
+                        <div className="flex items-center space-x-1 mt-1 text-xs text-gray-500">
+                          <span>📍</span>
+                          <span>
+                            {[transaction.city, transaction.region].filter(Boolean).join(', ')}
+                            {transaction.address && (
+                              <span className="ml-1 text-gray-400">
+                                • {transaction.address}
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className={`font-semibold ${
-                      // For credit cards: positive amounts (charges) are red, negative (payments) are green
-                      // For bank accounts: positive amounts (deposits) are green, negative (withdrawals) are red
-                      transaction.account.type === 'credit' 
-                        ? (transaction.amount > 0 ? 'text-red-600' : 'text-green-600')
-                        : (transaction.amount > 0 ? 'text-green-600' : 'text-red-600')
-                    }`}>
-                      {transaction.amount > 0 ? '+' : ''}{formatCurrency(transaction.amount)}
-                    </p>
+                  <div className="flex items-center space-x-2">
+                    <div className="text-right">
+                      <p className={`font-semibold ${
+                        // For credit cards: positive amounts (charges) are red, negative (payments) are green
+                        // For bank accounts: positive amounts (deposits) are green, negative (withdrawals) are red
+                        transaction.account.type === 'credit' 
+                          ? (transaction.amount > 0 ? 'text-red-600' : 'text-green-600')
+                          : (transaction.amount > 0 ? 'text-green-600' : 'text-red-600')
+                      }`}>
+                        {transaction.amount > 0 ? '+' : ''}{formatCurrency(transaction.amount)}
+                      </p>
+                    </div>
+                    <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditTransaction(transaction)}
+                        className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        title="Edit categories"
+                      >
+                        <Edit3 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteTransaction(transaction)}
+                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        title="Delete transaction"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -409,6 +503,39 @@ export default function TransactionsList({ transactions, accounts }: Transaction
           )}
         </CardContent>
       </Card>
+
+      {/* Add Transaction Modal */}
+      <AddTransactionModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        accounts={accounts}
+        onTransactionAdded={() => {
+          router.refresh()
+          setShowAddModal(false)
+        }}
+      />
+
+      {/* Delete Transaction Modal */}
+      <DeleteTransactionModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false)
+          setSelectedTransaction(null)
+        }}
+        transaction={selectedTransaction}
+        onTransactionDeleted={handleTransactionDeleted}
+      />
+
+      {/* Edit Transaction Modal */}
+      <EditTransactionModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false)
+          setSelectedTransaction(null)
+        }}
+        transaction={selectedTransaction}
+        onTransactionUpdated={handleTransactionUpdated}
+      />
     </div>
   )
 }

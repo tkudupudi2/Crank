@@ -50,6 +50,7 @@ interface Transaction {
   merchantName: string | null
   category: string[]
   date: Date
+  isManual?: boolean
   account: {
     name: string
     type: string
@@ -121,9 +122,17 @@ export default function AnalyticsContent({ accounts, transactions, monthlyTransa
   // Calculate spending metrics using filtered transactions
   // For depository accounts: negative amounts are expenses (spending)
   // For credit accounts: positive amounts are charges (spending)
+  // For manual transactions: negative amounts are expenses (spending)
   const totalSpending = filteredTransactions
     .filter(t => {
       const account = accounts.find(a => a.id === (t as any).account?.id)
+      
+      // Handle manual transactions (virtual accounts)
+      if ((t as any).isManual) {
+        return t.amount < 0 // Manual transactions are always expenses (negative amounts)
+      }
+      
+      // Handle real account transactions
       if (!account) return false
       
       if (account.type === 'depository') {
@@ -277,6 +286,13 @@ export default function AnalyticsContent({ accounts, transactions, monthlyTransa
   const categorySpending = filteredTransactions
     .filter(t => {
       const account = accounts.find(a => a.id === (t as any).account?.id)
+      
+      // Handle manual transactions (virtual accounts)
+      if ((t as any).isManual) {
+        return t.amount < 0 // Manual transactions are always expenses (negative amounts)
+      }
+      
+      // Handle real account transactions
       if (!account) return false
       
       if (account.type === 'depository') {

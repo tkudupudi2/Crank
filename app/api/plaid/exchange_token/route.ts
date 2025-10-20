@@ -319,7 +319,7 @@ export async function POST(request: NextRequest) {
             ytdInterestPaid: (account.subtype === 'mortgage' || account.subtype === 'student') ? ytdInterestPaid : undefined,
             ytdPrincipalPaid: (account.subtype === 'mortgage' || account.subtype === 'student') ? ytdPrincipalPaid : undefined,
             // Student loan fields
-            repaymentPlan: account.subtype === 'student' ? (repaymentPlan ? repaymentPlan.toString() : null) : undefined,
+            repaymentPlan: account.subtype === 'student' ? (repaymentPlan ? JSON.stringify(repaymentPlan) : null) : undefined,
             sequenceNumber: account.subtype === 'student' ? (sequenceNumber ? parseInt(sequenceNumber.toString()) : null) : undefined,
             servicerAddress: account.subtype === 'student' ? (servicerAddress || undefined) : undefined,
           },
@@ -362,7 +362,7 @@ export async function POST(request: NextRequest) {
             ytdInterestPaid: (account.subtype === 'mortgage' || account.subtype === 'student') ? ytdInterestPaid : undefined,
             ytdPrincipalPaid: (account.subtype === 'mortgage' || account.subtype === 'student') ? ytdPrincipalPaid : undefined,
             // Student loan fields
-            repaymentPlan: account.subtype === 'student' ? (repaymentPlan ? repaymentPlan.toString() : null) : undefined,
+            repaymentPlan: account.subtype === 'student' ? (repaymentPlan ? JSON.stringify(repaymentPlan) : null) : undefined,
             sequenceNumber: account.subtype === 'student' ? (sequenceNumber ? parseInt(sequenceNumber.toString()) : null) : undefined,
             servicerAddress: account.subtype === 'student' ? (servicerAddress || undefined) : undefined,
           },
@@ -394,6 +394,12 @@ export async function POST(request: NextRequest) {
                })
 
                const transactions = response.data.transactions
+               
+               // Debug: Log sample transaction data to see what Plaid provides
+               if (transactions.length > 0) {
+                 console.log('Sample Plaid transaction data from exchange_token:', JSON.stringify(transactions[0], null, 2))
+               }
+               
                let syncedTransactions = 0
 
                for (const transaction of transactions) {
@@ -474,7 +480,14 @@ export async function POST(request: NextRequest) {
                        subcategory: (transaction as any).subcategory,
                        date: new Date(transaction.date),
                        pending: transaction.pending,
-                     },
+                       // Location data
+                       address: transaction.location?.address || null,
+                       city: transaction.location?.city || null,
+                       region: transaction.location?.region || null,
+                       postalCode: transaction.location?.postal_code || null,
+                       country: transaction.location?.country || null,
+                       storeNumber: (transaction as any).store_number || null,
+                     } as any,
                      create: {
                        userId: userId,
                        accountId: account.id,
@@ -487,7 +500,14 @@ export async function POST(request: NextRequest) {
                        date: new Date(transaction.date),
                        pending: transaction.pending,
                        accountOwner: transaction.account_owner,
-                     },
+                       // Location data
+                       address: transaction.location?.address || null,
+                       city: transaction.location?.city || null,
+                       region: transaction.location?.region || null,
+                       postalCode: transaction.location?.postal_code || null,
+                       country: transaction.location?.country || null,
+                       storeNumber: (transaction as any).store_number || null,
+                     } as any,
                    })
                    syncedTransactions++
                  }

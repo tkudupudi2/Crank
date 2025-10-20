@@ -230,6 +230,13 @@ async function fetchTransactionsForItem(itemId: string, webhookCode: string) {
             subcategory: null,
             date: new Date(transaction.date),
             pending: transaction.pending,
+            // Location data
+            address: transaction.location?.address || null,
+            city: transaction.location?.city || null,
+            region: transaction.location?.region || null,
+            postalCode: transaction.location?.postal_code || null,
+            country: transaction.location?.country || null,
+            storeNumber: (transaction as any).store_number || null,
           },
           create: {
             userId: plaidItem.userId,
@@ -243,6 +250,13 @@ async function fetchTransactionsForItem(itemId: string, webhookCode: string) {
             date: new Date(transaction.date),
             pending: transaction.pending,
             accountOwner: transaction.account_owner,
+            // Location data
+            address: transaction.location?.address || null,
+            city: transaction.location?.city || null,
+            region: transaction.location?.region || null,
+            postalCode: transaction.location?.postal_code || null,
+            country: transaction.location?.country || null,
+            storeNumber: (transaction as any).store_number || null,
           },
         })
 
