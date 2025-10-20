@@ -6,6 +6,18 @@ import AnalyticsBlurb from '@/components/dashboard/AnalyticsBlurb'
 import AccountConnection from '@/components/dashboard/AccountConnection'
 import { redirect } from 'next/navigation'
 
+function getTimeBasedGreeting(): string {
+  const hour = new Date().getHours()
+  
+  if (hour >= 3 && hour < 12) {
+    return 'Good morning'
+  } else if (hour >= 12 && hour < 17) {
+    return 'Good afternoon'
+  } else {
+    return 'Good evening'
+  }
+}
+
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions)
 
@@ -14,6 +26,19 @@ export default async function DashboardPage() {
   }
 
   const userId = (session?.user as any)?.id
+
+  // Check if user has completed onboarding and get firstName
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { 
+      onboardingCompleted: true,
+      firstName: true
+    }
+  })
+
+  if (!user?.onboardingCompleted) {
+    redirect('/onboarding')
+  }
 
   // Get all user's accounts for accurate counts (exclude virtual accounts)
   const allAccounts = await prisma.account.findMany({
@@ -68,11 +93,14 @@ export default async function DashboardPage() {
   
   const netWorth = bankAccountBalance - creditCardDebt
 
+  const greeting = getTimeBasedGreeting()
+  const displayName = user?.firstName || (session?.user as any)?.name || 'there'
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600">Welcome back, {(session?.user as any)?.name}</p>
+        <p className="text-gray-600">{greeting}, {displayName}!</p>
       </div>
 
       {accounts.length === 0 ? (

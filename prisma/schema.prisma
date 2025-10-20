@@ -15,6 +15,9 @@ model User {
   id        String   @id @default(cuid())
   email     String   @unique
   name      String?
+  firstName String?
+  lastName  String?
+  onboardingCompleted Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -25,6 +28,7 @@ model User {
   plaidItems       PlaidItem[]
   syncStatus       SyncStatus?
   userPreferences  UserPreferences?
+  feedback         Feedback[]
 
   @@map("users")
 }
@@ -219,5 +223,35 @@ model WebhookEvent {
   updatedAt       DateTime  @updatedAt
 
   @@map("webhook_events")
+}
+
+model Feedback {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String   // 'bug', 'feature', 'improvement'
+  message     String   // The feedback content
+  status      String   @default("new") // 'new', 'in_progress', 'resolved', 'closed', 'done'
+  priority    String?  // 'low', 'medium', 'high', 'critical' - null by default
+  tags        String[] // Array of tags for categorization
+  metadata    Json?    // Additional metadata (browser info, user agent, etc.)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments FeedbackComment[]
+
+  @@map("feedback")
+}
+
+model FeedbackComment {
+  id         String   @id @default(cuid())
+  feedbackId String
+  comment    String   // The comment content
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  feedback Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+
+  @@map("feedback_comments")
 }
 

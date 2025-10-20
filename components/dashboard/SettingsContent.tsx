@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { Textarea } from '@/components/ui/Textarea'
 import DeleteAccountModal from './DeleteAccountModal'
 import { 
   User, 
@@ -19,12 +20,18 @@ import {
   AlertTriangle,
   Settings as SettingsIcon,
   Database,
+  MessageSquare,
+  Bug,
+  Lightbulb,
+  ExternalLink,
 } from 'lucide-react'
 
 interface User {
   id: string
   email: string
   name: string | null
+  firstName: string | null
+  lastName: string | null
   createdAt: Date
 }
 
@@ -59,6 +66,13 @@ export default function SettingsContent({ user, connectedAccounts, plaidItems }:
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  
+  // Feedback state
+  const [feedback, setFeedback] = useState('')
+  const [feedbackType, setFeedbackType] = useState<'bug' | 'feature' | 'improvement'>('bug')
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false)
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false)
+
 
   const handleSaveSettings = async () => {
     setSaving(true)
@@ -83,7 +97,8 @@ export default function SettingsContent({ user, connectedAccounts, plaidItems }:
       // Create a data export
       const exportData = {
         user: {
-          name: user.name,
+          firstName: user.firstName,
+          lastName: user.lastName,
           email: user.email,
           memberSince: user.createdAt,
         },
@@ -141,6 +156,57 @@ export default function SettingsContent({ user, connectedAccounts, plaidItems }:
     }
   }
 
+  const handleSubmitFeedback = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!feedback.trim()) {
+      setMessage('Please enter your feedback before submitting.')
+      return
+    }
+
+    setIsSubmittingFeedback(true)
+    setMessage('')
+
+    try {
+      const response = await fetch('/api/feedback/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: feedbackType,
+          message: feedback.trim()
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to submit feedback')
+      }
+      
+      setFeedbackSubmitted(true)
+      setFeedback('')
+      setFeedbackType('bug')
+      setMessage('Thank you for your feedback! We appreciate your input.')
+      
+      // Reset success message after 3 seconds
+      setTimeout(() => {
+        setFeedbackSubmitted(false)
+        setMessage('')
+      }, 3000)
+    } catch (error) {
+      setMessage('Failed to submit feedback. Please try again.')
+    } finally {
+      setIsSubmittingFeedback(false)
+    }
+  }
+
+  const handleExternalFeedback = () => {
+    // Open external feedback form or email
+    window.open('mailto:feedback@crank.app?subject=Beta Feedback', '_blank')
+  }
+
   return (
     <div className="space-y-6">
       {/* Success/Error Message */}
@@ -173,21 +239,29 @@ export default function SettingsContent({ user, connectedAccounts, plaidItems }:
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-gray-700">Full Name</label>
+              <label className="text-sm font-medium text-gray-700">First Name</label>
               <Input 
-                value={user.name || ''} 
+                value={user.firstName || 'Not provided'} 
                 disabled 
                 className="mt-1"
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700">Email Address</label>
+              <label className="text-sm font-medium text-gray-700">Last Name</label>
               <Input 
-                value={user.email} 
+                value={user.lastName || 'Not provided'} 
                 disabled 
                 className="mt-1"
               />
             </div>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700">Email Address</label>
+            <Input 
+              value={user.email} 
+              disabled 
+              className="mt-1"
+            />
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700">Member Since</label>
@@ -369,6 +443,100 @@ export default function SettingsContent({ user, connectedAccounts, plaidItems }:
               </Button>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Beta Feedback */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <MessageSquare className="h-5 w-5" />
+            <span>Beta Feedback</span>
+          </CardTitle>
+          <CardDescription>
+            Help us improve Crank by sharing your thoughts, reporting bugs, or suggesting features
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {feedbackSubmitted ? (
+            <div className="text-center py-6">
+              <div className="text-green-600 text-4xl mb-2">✓</div>
+              <h3 className="text-lg font-semibold text-green-800 mb-2">Thank you!</h3>
+              <p className="text-green-600">Your feedback has been submitted successfully.</p>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmitFeedback} className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">
+                  What would you like to share?
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <Button
+                    type="button"
+                    variant={feedbackType === 'bug' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setFeedbackType('bug')}
+                    className="flex items-center space-x-1"
+                  >
+                    <Bug className="h-4 w-4" />
+                    <span>Bug</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={feedbackType === 'feature' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setFeedbackType('feature')}
+                    className="flex items-center space-x-1"
+                  >
+                    <Lightbulb className="h-4 w-4" />
+                    <span>Feature</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={feedbackType === 'improvement' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setFeedbackType('improvement')}
+                    className="flex items-center space-x-1"
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                    <span>Improvement</span>
+                  </Button>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">
+                  Tell us more:
+                </label>
+                <Textarea
+                  value={feedback}
+                  onChange={(e) => setFeedback(e.target.value)}
+                  placeholder={`Describe the ${feedbackType}...`}
+                  className="min-h-[100px]"
+                  required
+                />
+              </div>
+
+              <div className="flex space-x-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleExternalFeedback}
+                  className="flex-1 flex items-center space-x-2"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  <span>Email Us</span>
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={!feedback.trim() || isSubmittingFeedback}
+                  className="flex-1"
+                >
+                  {isSubmittingFeedback ? 'Submitting...' : 'Submit Feedback'}
+                </Button>
+              </div>
+            </form>
+          )}
         </CardContent>
       </Card>
 

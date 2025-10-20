@@ -18,6 +18,8 @@ export default async function SettingsPage() {
       id: true,
       email: true,
       name: true,
+      firstName: true,
+      lastName: true,
       createdAt: true,
     },
   })

@@ -1,7 +1,9 @@
 import { redirect } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 import DashboardNav from '@/components/dashboard/DashboardNav'
+import BetaFeedbackWrapper from '@/components/dashboard/BetaFeedbackWrapper'
 
 export default async function DashboardLayout({
   children,
@@ -14,12 +16,23 @@ export default async function DashboardLayout({
     redirect('/auth/signin')
   }
 
+  // Check if user has completed onboarding
+  const user = await prisma.user.findUnique({
+    where: { id: (session.user as any).id },
+    select: { onboardingCompleted: true }
+  })
+
+  if (!user?.onboardingCompleted) {
+    redirect('/onboarding')
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <DashboardNav />
       <main className="p-6">
         {children}
       </main>
+      <BetaFeedbackWrapper />
     </div>
   )
 }
