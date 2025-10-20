@@ -91,11 +91,12 @@ export default function LandingPage() {
           >
             Sign In
           </Button>
-          <Link href="/auth/signup">
-            <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl">
-              Get Started
-            </Button>
-          </Link>
+          <Button 
+            onClick={handleSignIn}
+            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
+          >
+            Get Started
+          </Button>
         </div>
       </nav>
 
@@ -148,18 +149,17 @@ export default function LandingPage() {
           and gain insights into your financial health.
         </p>
           <div className="space-x-6">
-            <Link href="/auth/signup">
-              <Button 
-                size="lg" 
-                className="text-xl px-12 py-4 bg-white text-gray-900 border-2 border-gray-200 hover:border-transparent transition-all duration-500 shadow-lg hover:shadow-xl relative overflow-hidden group"
-              >
-                <span className="relative z-10 flex items-center group-hover:text-white transition-colors duration-300">
-                  Get Started
-                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
-                </span>
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
-              </Button>
-            </Link>
+            <Button 
+              size="lg" 
+              onClick={handleSignIn}
+              className="text-xl px-12 py-4 bg-white text-gray-900 border-2 border-gray-200 hover:border-transparent transition-all duration-500 shadow-lg hover:shadow-xl relative overflow-hidden group"
+            >
+              <span className="relative z-10 flex items-center group-hover:text-white transition-colors duration-300">
+                Get Started
+                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
+              </span>
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
+            </Button>
             <Button 
               variant="outline" 
               size="lg" 
@@ -624,15 +624,14 @@ export default function LandingPage() {
           <p className="text-2xl text-blue-100 mb-12 leading-relaxed">
             Join thousands of users who have simplified their financial management with Crank.
           </p>
-          <Link href="/auth/signup">
-            <Button 
-              size="lg" 
-              className="text-xl px-16 py-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 hover:scale-105 transition-all duration-300 shadow-2xl hover:shadow-3xl"
-            >
-              Get Started Now
-              <ArrowRight className="ml-3 h-6 w-6" />
-            </Button>
-          </Link>
+          <Button 
+            size="lg" 
+            onClick={handleSignIn}
+            className="text-xl px-16 py-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 hover:scale-105 transition-all duration-300 shadow-2xl hover:shadow-3xl"
+          >
+            Get Started Now
+            <ArrowRight className="ml-3 h-6 w-6" />
+          </Button>
         </div>
       </section>
 
