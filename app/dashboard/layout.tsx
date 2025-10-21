@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import DashboardNav from '@/components/dashboard/DashboardNav'
 import BetaFeedbackWrapper from '@/components/dashboard/BetaFeedbackWrapper'
+import ChatWidget from '@/components/chat/ChatWidget'
 
 export default async function DashboardLayout({
   children,
@@ -33,6 +34,7 @@ export default async function DashboardLayout({
         {children}
       </main>
       <BetaFeedbackWrapper />
+      <ChatWidget />
     </div>
   )
 }

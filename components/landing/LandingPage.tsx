@@ -160,17 +160,17 @@ export default function LandingPage() {
               </span>
               <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
             </Button>
-            <Button 
-              variant="outline" 
-              size="lg" 
+          <Button 
+            variant="outline" 
+            size="lg" 
               className="text-xl px-12 py-4 border-2 border-gray-200 bg-white text-gray-900 hover:border-transparent transition-all duration-500 shadow-lg hover:shadow-xl relative overflow-hidden group"
-              onClick={handleSignIn}
-            >
+            onClick={handleSignIn}
+          >
               <span className="relative z-10 group-hover:text-white transition-colors duration-300">
-                Sign In
+            Sign In
               </span>
               <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
-            </Button>
+          </Button>
           </div>
         </div>
       </section>
@@ -308,7 +308,7 @@ export default function LandingPage() {
             <div className="order-1 lg:order-2">
               <h2 className="text-5xl font-bold text-gray-900 mb-8">
                 Bank Account<br />Integration
-              </h2>
+          </h2>
               <p className="text-xl text-gray-600 mb-10 leading-relaxed">
                 Connect all your bank accounts securely to get a complete view of your financial picture. 
                 Track checking, savings, and investment accounts in one dashboard.
@@ -357,7 +357,7 @@ export default function LandingPage() {
             <div>
               <h2 className="text-5xl font-bold text-gray-900 mb-8">
                 Spending<br />Analytics
-              </h2>
+          </h2>
               <p className="text-xl text-gray-600 mb-10 leading-relaxed">
                 Get deep insights into your spending patterns with detailed analytics, 
                 categorization, and trend analysis to help you make better financial decisions.
@@ -631,7 +631,7 @@ export default function LandingPage() {
           >
             Get Started Now
             <ArrowRight className="ml-3 h-6 w-6" />
-          </Button>
+            </Button>
         </div>
       </section>
 
@@ -700,7 +700,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="border-t pt-8 text-center text-gray-600">
-            <p>&copy; 2024 Crank. All rights reserved.</p>
+          <p>&copy; 2024 Crank. All rights reserved.</p>
           </div>
         </div>
       </footer>

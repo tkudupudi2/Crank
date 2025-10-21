@@ -29,6 +29,7 @@ model User {
   syncStatus       SyncStatus?
   userPreferences  UserPreferences?
   feedback         Feedback[]
+  conversations    Conversation[]
 
   @@map("users")
 }
@@ -253,5 +254,20 @@ model FeedbackComment {
   feedback Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
 
   @@map("feedback_comments")
+}
+
+model Conversation {
+  id         String   @id @default(cuid())
+  userId     String
+  query      String
+  intent     String
+  entities   Json
+  response   String
+  confidence Float
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("conversations")
 }
 
