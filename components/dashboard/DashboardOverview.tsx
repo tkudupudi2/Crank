@@ -7,6 +7,7 @@ import { CreditCard, DollarSign, TrendingUp, ArrowUpRight, ArrowDownRight, Plus 
 import { format } from 'date-fns'
 import Link from 'next/link'
 import AccountConnection from './AccountConnection'
+import FinancialHealthScore from './FinancialHealthScore'
 // removed expandable graphs
 
 interface Account {
@@ -70,7 +71,9 @@ export default function DashboardOverview({
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <FinancialHealthScore />
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Net Worth</CardTitle>

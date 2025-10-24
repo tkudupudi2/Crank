@@ -264,6 +264,7 @@ model Conversation {
   entities   Json
   response   String
   confidence Float
+  method     String?  // ML method used (rule_based, ml_enhanced, etc.)
   createdAt  DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

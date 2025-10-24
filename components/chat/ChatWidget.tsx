@@ -11,8 +11,10 @@ import {
   Bot, 
   User,
   Minimize2,
-  Maximize2
+  Maximize2,
+  Sparkles
 } from 'lucide-react'
+import SmartSuggestions from './SmartSuggestions'
 
 interface Message {
   id: string
@@ -28,14 +30,16 @@ interface Message {
 
 interface ChatWidgetProps {
   className?: string
+  userId?: string
 }
 
-export default function ChatWidget({ className = '' }: ChatWidgetProps) {
+export default function ChatWidget({ className = '', userId = 'default' }: ChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [showSuggestions, setShowSuggestions] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -120,7 +124,8 @@ export default function ChatWidget({ className = '' }: ChatWidgetProps) {
     setIsLoading(true)
 
     try {
-      const response = await fetch('/api/nlp/parse-v2', {
+      // Try ML-enhanced service first
+      let response = await fetch('/api/nlp/parse-v3', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -128,10 +133,23 @@ export default function ChatWidget({ className = '' }: ChatWidgetProps) {
         body: JSON.stringify({ query: userMessage.content }),
       })
 
-      const result = await response.json()
+      let result
+      if (response.ok) {
+        result = await response.json()
+      } else {
+        // Fallback to basic service
+        response = await fetch('/api/nlp/parse-v2', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ query: userMessage.content }),
+        })
 
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to process query')
+        if (!response.ok) {
+          throw new Error('Failed to process query')
+        }
+        result = await response.json()
       }
 
       const botMessage: Message = {
@@ -206,6 +224,12 @@ export default function ChatWidget({ className = '' }: ChatWidgetProps) {
     }
   }
 
+  const handleSuggestionClick = (suggestion: string) => {
+    setInputValue(suggestion)
+    setShowSuggestions(false)
+    inputRef.current?.focus()
+  }
+
   if (!isOpen) {
     return (
       <div className={`fixed bottom-6 right-6 z-50 ${className}`}>
@@ -235,6 +259,15 @@ export default function ChatWidget({ className = '' }: ChatWidgetProps) {
               <Button
                 variant="ghost"
                 size="sm"
+                onClick={() => setShowSuggestions(!showSuggestions)}
+                className="h-8 w-8 p-0"
+                title="Smart Suggestions"
+              >
+                <Sparkles className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={toggleMinimize}
                 className="h-8 w-8 p-0"
               >
@@ -254,6 +287,16 @@ export default function ChatWidget({ className = '' }: ChatWidgetProps) {
 
         {!isMinimized && (
           <CardContent className="flex flex-col h-[calc(100%-4rem)] p-0">
+            {/* Smart Suggestions */}
+            {showSuggestions && (
+              <div className="border-b p-4 max-h-64 overflow-y-auto">
+                <SmartSuggestions 
+                  userId={userId} 
+                  onSuggestionClick={handleSuggestionClick}
+                />
+              </div>
+            )}
+            
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {messages.length === 0 ? (
@@ -292,12 +335,6 @@ export default function ChatWidget({ className = '' }: ChatWidgetProps) {
                         )}
                         <div className="flex-1">
                           <p className="text-sm leading-relaxed">{message.content}</p>
-                          {message.intent && (
-                            <p className="text-xs opacity-70 mt-2">
-                              Intent: {message.intent} ({Math.round((message.confidence || 0) * 100)}%)
-                              {message.method && ` • ${message.method}`}
-                            </p>
-                          )}
                           {message.context && message.context.length > 0 && (
                             <div className="mt-2 p-2 bg-blue-50 rounded text-xs">
                               <p className="font-medium text-blue-800 mb-1">Context:</p>
