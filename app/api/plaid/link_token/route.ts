@@ -24,6 +24,9 @@ export async function POST(request: NextRequest) {
       country_codes: ['US'] as any,
       language: 'en',
       webhook: `${process.env.NEXT_PUBLIC_APP_URL}/api/plaid/webhook`,
+      transactions: {
+        days_requested: 180,
+      },
     }
 
     if (accountType === 'depository') {

@@ -86,6 +86,13 @@ export async function POST(request: NextRequest) {
           }
           break
 
+        case 'RECURRING_TRANSACTIONS':
+          if (webhook_code === 'RECURRING_TRANSACTIONS_UPDATE') {
+            await fetchRecurringForItem(item_id)
+            success = true
+          }
+          break
+
         case 'ACCOUNTS':
           if (webhook_code === 'BALANCE') {
             await updateAccountBalances(item_id)
@@ -472,6 +479,31 @@ async function updateLiabilities(itemId: string) {
     console.log(`[WEBHOOK] Updated ${updatedCount} liability accounts for item ${itemId}`)
   } catch (error) {
     console.error(`[WEBHOOK] Error updating liabilities for item ${itemId}:`, error)
+    throw error
+  }
+}
+
+async function fetchRecurringForItem(itemId: string) {
+  try {
+    const plaidItem = await prisma.plaidItem.findFirst({
+      where: { plaidItemId: itemId },
+    })
+
+    if (!plaidItem) {
+      console.error('Plaid item not found:', itemId)
+      return
+    }
+
+    // Trigger a refresh/fetch to ensure we react to webhook
+    const resp = await plaidClient.transactionsRecurringGet({
+      access_token: plaidItem.accessToken,
+    })
+
+    const outflows = resp.data.outflow_streams?.length || 0
+    const inflows = resp.data.inflow_streams?.length || 0
+    console.log(`[WEBHOOK] Recurring refreshed for item ${itemId}: outflows=${outflows}, inflows=${inflows}`)
+  } catch (error) {
+    console.error(`[WEBHOOK] Error fetching recurring for item ${itemId}:`, error)
     throw error
   }
 }

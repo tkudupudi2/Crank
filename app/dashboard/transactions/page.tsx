@@ -88,10 +88,10 @@ export default async function TransactionsPage() {
         // Sync transactions for each Plaid item (last 90 days for initial sync)
         for (const item of plaidItems) {
           try {
-            // Get transactions from the last 90 days for initial sync
+            // Get transactions from the last 180 days for initial sync
             const endDate = new Date()
             const startDate = new Date()
-            startDate.setDate(startDate.getDate() - 90)
+            startDate.setDate(startDate.getDate() - 180)
 
             // Format dates as YYYY-MM-DD strings
             const formatDate = (date: Date) => date.toISOString().split('T')[0]

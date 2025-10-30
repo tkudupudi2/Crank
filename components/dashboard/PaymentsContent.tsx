@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -56,6 +56,10 @@ interface RecurringPayment {
   account: string
   category: string[]
   isEstimated?: boolean
+  direction?: 'inflow' | 'outflow'
+  isOutflow?: boolean
+  institutionName?: string | null
+  accountType?: string | null
 }
 
 export default function PaymentsContent({ 
@@ -134,102 +138,52 @@ export default function PaymentsContent({
     })
   }, [transactions])
 
-  // Detect recurring payments
-  const recurringPayments = useMemo(() => {
-    const recurring: RecurringPayment[] = []
-    const merchantGroups: { [key: string]: Transaction[] } = {}
-    
-    // Group transactions by merchant
-    paymentTransactions.forEach(transaction => {
-      const merchant = transaction.merchantName || transaction.description
-      if (!merchantGroups[merchant]) {
-        merchantGroups[merchant] = []
-      }
-      merchantGroups[merchant].push(transaction)
-    })
-    
-    // Known recurring services that should be detected even with single transactions
-    const knownRecurringServices = [
-      'netflix', 'spotify', 'amazon prime', 'adobe', 'microsoft',
-      'apple music', 'youtube premium', 'hulu', 'disney', 'hbo',
-      'dropbox', 'slack', 'zoom', 'canva', 'figma', 'notion',
-      'github', 'aws', 'google cloud', 'salesforce', 'hubspot',
-      'mailchimp', 'stripe', 'paypal', 'shopify', 'squarespace',
-      'wix', 'wordpress', 'godaddy', 'namecheap', 'cloudflare',
-      'vercel', 'netlify', 'heroku', 'digitalocean', 'linode',
-      'grammarly', 'lastpass', '1password', 'dashlane', 'bitwarden',
-      'expressvpn', 'nordvpn', 'surfshark', 'protonvpn', 'cyberghost',
-      'audible', 'kindle unlimited', 'scribd', 'masterclass', 'skillshare',
-      'linkedin premium', 'glassdoor', 'indeed', 'monster', 'ziprecruiter',
-      'tinder', 'bumble', 'hinge', 'match', 'eharmony', 'okcupid',
-      'uber eats', 'doordash', 'grubhub', 'postmates', 'instacart',
-      'blue apron', 'hello fresh', 'sunbasket', 'purple carrot', 'green chef',
-      'peloton', 'classpass', 'mindbody', 'glofox', 'zenplanner',
-      'calm', 'headspace', 'insight timer', 'ten percent happier', 'waking up',
-      'roku', 'fire tv', 'apple tv', 'chromecast', 'nvidia shield',
-      'twitch', 'patreon', 'onlyfans', 'fanhouse', 'ko-fi',
-      'medium', 'substack', 'ghost', 'beehiiv', 'convertkit',
-      'mailgun', 'sendgrid', 'postmark', 'mandrill', 'sparkpost',
-      'intercom', 'zendesk', 'freshdesk', 'helpscout', 'crisp',
-      'hotjar', 'fullstory', 'logrocket', 'mixpanel', 'amplitude',
-      'segment', 'monday', 'asana', 'trello', 'clickup', 'notion',
-      'airtable', 'smartsheet', 'monday.com', 'wrike', 'basecamp',
-      'slack', 'microsoft teams', 'discord', 'zoom', 'webex',
-      'go to meeting', 'bluejeans', 'jitsi', 'whereby', 'appear.in'
-    ]
+  // Recurring payments fetched from Plaid
+  const [recurringPayments, setRecurringPayments] = useState<RecurringPayment[]>([])
+  const [loadingRecurring, setLoadingRecurring] = useState<boolean>(false)
+  const [recurringError, setRecurringError] = useState<string | null>(null)
 
-    // Analyze each merchant group for recurring patterns
-    Object.entries(merchantGroups).forEach(([merchant, txs]) => {
-      // Sort by date
-      const sortedTxs = txs.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      
-      // Check if this is a known recurring service (even with single transaction)
-      const isKnownRecurring = knownRecurringServices.some(service => {
-        const merchantMatch = merchant.toLowerCase().includes(service)
-        const descriptionMatch = sortedTxs[0].description.toLowerCase().includes(service)
-        return merchantMatch || descriptionMatch
-      })
-      
-      if (isKnownRecurring && txs.length === 1) {
-        // For known recurring services with single transaction, estimate next due date
-        const lastPayment = new Date(sortedTxs[0].date)
-        const nextDue = new Date(lastPayment)
-        nextDue.setMonth(nextDue.getMonth() + 1) // Assume monthly
-        
-        recurring.push({
-          id: `recurring_${merchant}_${Date.now()}`,
-          merchantName: merchant,
-          description: sortedTxs[0].description,
-          amount: Math.abs(sortedTxs[0].amount),
-          frequency: 'monthly',
-          nextDue: nextDue,
-          lastPayment: lastPayment,
-          account: sortedTxs[0].account.name,
-          category: sortedTxs[0].category,
-          isEstimated: true // Mark as estimated since we only have one transaction
-        })
-      } else if (txs.length >= 2) {
-        // Check for monthly pattern with multiple transactions
-        const monthlyPattern = checkMonthlyPattern(sortedTxs)
-        if (monthlyPattern) {
-          recurring.push({
-            id: `recurring_${merchant}_${Date.now()}`,
-            merchantName: merchant,
-            description: sortedTxs[0].description,
-            amount: monthlyPattern.averageAmount,
-            frequency: 'monthly',
-            nextDue: monthlyPattern.nextDue,
-            lastPayment: new Date(sortedTxs[sortedTxs.length - 1].date),
-            account: sortedTxs[0].account.name,
-            category: sortedTxs[0].category,
-            isEstimated: false
-          })
+  useEffect(() => {
+    let isMounted = true
+    async function fetchRecurring() {
+      try {
+        setLoadingRecurring(true)
+        setRecurringError(null)
+        const res = await fetch('/api/plaid/recurring', { method: 'GET' })
+        if (!res.ok) {
+          throw new Error(`Failed to fetch recurring: ${res.status}`)
         }
+        const data = await res.json()
+        const mapped: RecurringPayment[] = (data.recurring || []).map((r: any) => ({
+          id: r.id,
+          merchantName: r.merchantName,
+          description: r.description,
+          amount: r.amount,
+          frequency: (r.frequency || 'monthly'),
+          nextDue: r.nextDue ? new Date(r.nextDue) : new Date(),
+          lastPayment: r.lastPayment ? new Date(r.lastPayment) : new Date(),
+          account: r.account,
+          institutionName: r.institutionName ?? null,
+          accountType: r.accountType ?? null,
+          category: Array.isArray(r.category) ? r.category : [],
+          isEstimated: !!r.isEstimated,
+          direction: r.direction,
+          isOutflow: !!r.isOutflow,
+        }))
+        if (isMounted) {
+          setRecurringPayments(mapped.sort((a, b) => a.nextDue.getTime() - b.nextDue.getTime()))
+        }
+      } catch (e: any) {
+        if (isMounted) setRecurringError(e?.message || 'Failed to load recurring payments')
+      } finally {
+        if (isMounted) setLoadingRecurring(false)
       }
-    })
-    
-    return recurring.sort((a, b) => a.nextDue.getTime() - b.nextDue.getTime())
-  }, [paymentTransactions])
+    }
+    fetchRecurring()
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   // Future payments from liability accounts
   const futurePayments = useMemo(() => {
@@ -455,18 +409,31 @@ export default function PaymentsContent({
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Recurring Payments</h2>
             <p className="text-sm text-gray-500">
-              Automatically detected from your transaction patterns and known recurring services
+              Powered by Plaid Recurring Transactions
             </p>
           </div>
           
-          {recurringPayments.length === 0 ? (
+          {loadingRecurring ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <Repeat className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Loading Recurring Payments…</h3>
+              </CardContent>
+            </Card>
+          ) : recurringError ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to Load</h3>
+                <p className="text-gray-500">{recurringError}</p>
+              </CardContent>
+            </Card>
+          ) : recurringPayments.length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center">
                 <Repeat className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No Recurring Payments Detected</h3>
-                <p className="text-gray-500">
-                  We'll automatically detect recurring payments as more transaction data becomes available.
-                </p>
+                <p className="text-gray-500">Connect accounts and ensure Transactions history is synced.</p>
               </CardContent>
             </Card>
           ) : (
@@ -484,7 +451,9 @@ export default function PaymentsContent({
                         <div>
                           <p className="font-medium text-gray-900">{payment.merchantName}</p>
                           <p className="text-sm text-gray-500">
-                            {payment.account} • Next due {format(payment.nextDue, 'MMM d, yyyy')}
+                            {payment.institutionName || payment.account}
+                            {payment.accountType ? ` • ${payment.accountType}` : ''}
+                            {` • Next due ${format(payment.nextDue, 'MMM d, yyyy')}`}
                           </p>
                           <div className="flex items-center space-x-2 mt-1">
                             <Badge variant="outline" className="text-xs">
@@ -504,8 +473,8 @@ export default function PaymentsContent({
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold text-gray-900">
-                          ${payment.amount.toFixed(2)}
+                        <p className={`font-semibold ${payment.isOutflow ? 'text-red-600' : 'text-green-600'}`}>
+                          {payment.isOutflow ? '-' : '+'}${payment.amount.toFixed(2)}
                         </p>
                         <p className="text-sm text-gray-500">
                           Last: {format(payment.lastPayment, 'MMM d')}

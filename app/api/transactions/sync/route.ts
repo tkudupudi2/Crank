@@ -109,9 +109,9 @@ export async function POST(request: NextRequest) {
           startDate = new Date(item.lastSyncAt)
           console.log(`Incremental sync for ${item.institutionName} from ${startDate.toISOString()}`)
         } else {
-          // For initial sync, get last 90 days
-          startDate.setDate(startDate.getDate() - 90)
-          console.log(`Initial sync for ${item.institutionName} from last 90 days`)
+          // For initial sync, get last 180 days
+          startDate.setDate(startDate.getDate() - 180)
+          console.log(`Initial sync for ${item.institutionName} from last 180 days`)
         }
 
         // Format dates as YYYY-MM-DD strings
