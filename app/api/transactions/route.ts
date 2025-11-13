@@ -17,20 +17,14 @@ export async function GET(request: Request) {
     const thirtyDaysAgo = new Date()
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
-    const transactions = await prisma.transaction.findMany({
-      where: {
-        userId: userId,
-        date: {
-          gte: thirtyDaysAgo
-        }
-      },
-      include: {
-        account: true
-      },
-      orderBy: {
-        date: 'desc'
-      }
+    const transactionsRaw = await prisma.transaction.findMany({
+      where: { userId: userId },
+      include: { account: true },
+      take: 1000,
     })
+    const transactions = transactionsRaw
+      .filter((t: any) => new Date((t as any).date as any) >= thirtyDaysAgo)
+      .sort((a: any, b: any) => new Date(b.date as any).getTime() - new Date(a.date as any).getTime())
 
     // Transform transactions to match the expected format
     const formattedTransactions = transactions.map(transaction => ({

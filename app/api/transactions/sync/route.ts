@@ -224,16 +224,20 @@ export async function POST(request: NextRequest) {
               where: { plaidTransactionId: transaction.transaction_id },
             })
 
+            // Use transaction.name as fallback for merchantName if merchant_name is null/undefined
+            const merchantName = transaction.merchant_name || transaction.name || null
+            const description = transaction.name || null
+            
             if (existingTransaction) {
               // Update existing transaction
               await prisma.transaction.update({
                 where: { plaidTransactionId: transaction.transaction_id },
                 data: {
                   amount: correctedAmount,
-                  description: transaction.name,
-                  merchantName: transaction.merchant_name,
+                  description: description,
+                  merchantName: merchantName,
                   category: categories,
-                  subcategory: (transaction as any).subcategory,
+                  subcategory: (transaction as any).subcategory || null,
                   date: new Date(transaction.date),
                   pending: transaction.pending,
                 },
@@ -247,13 +251,13 @@ export async function POST(request: NextRequest) {
                   accountId: account.id,
                   plaidTransactionId: transaction.transaction_id,
                   amount: correctedAmount,
-                  description: transaction.name,
-                  merchantName: transaction.merchant_name,
+                  description: description,
+                  merchantName: merchantName,
                   category: categories,
-                  subcategory: (transaction as any).subcategory,
+                  subcategory: (transaction as any).subcategory || null,
                   date: new Date(transaction.date),
                   pending: transaction.pending,
-                  accountOwner: transaction.account_owner,
+                  accountOwner: transaction.account_owner || null,
                 },
               })
               newCount++

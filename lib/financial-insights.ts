@@ -77,63 +77,52 @@ class FinancialInsightsService {
    */
   private static async getSpendingPatterns(userId: string): Promise<SpendingPattern[]> {
     try {
-      // Get current month spending by category
-      const currentMonth = new Date()
-      const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1)
-      const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0)
+      // App-side compute: fetch a coarse window and aggregate in memory
+      const now = new Date()
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+      const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+      const endOfPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0)
 
-      const currentSpending = await prisma.$queryRawUnsafe(`
-        SELECT 
-          category,
-          SUM(ABS(amount)) as total_amount
-        FROM transactions 
-        WHERE "userId" = $1 
-          AND date BETWEEN $2 AND $3
-          AND amount < 0
-        GROUP BY category
-        ORDER BY total_amount DESC
-        LIMIT 10
-      `, userId, startOfMonth, endOfMonth)
+      const rows = await prisma.transaction.findMany({
+        where: { userId },
+        select: { amount: true, date: true, category: true },
+        take: 5000,
+      })
 
-      // Get previous month for trend calculation
-      const prevMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)
-      const endOfPrevMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 0)
+      // Helper to accumulate spending by primary category for a range
+      const sumByCategory = (start: Date, end: Date) => {
+        const map = new Map<string, number>()
+        for (const tx of rows) {
+          const d = new Date(tx.date as any)
+          if (d >= start && d <= end && (tx.amount ?? 0) < 0) {
+            const primary = (tx.category && tx.category.length > 0 ? tx.category[0] : 'Other') as string
+            map.set(primary, (map.get(primary) || 0) + Math.abs(tx.amount || 0))
+          }
+        }
+        return map
+      }
 
-      const prevSpending = await prisma.$queryRawUnsafe(`
-        SELECT 
-          category,
-          SUM(ABS(amount)) as total_amount
-        FROM transactions 
-        WHERE "userId" = $1 
-          AND date BETWEEN $2 AND $3
-          AND amount < 0
-        GROUP BY category
-      `, userId, prevMonth, endOfPrevMonth)
+      const currentMap = sumByCategory(startOfMonth, endOfMonth)
+      const prevMap = sumByCategory(startOfPrevMonth, endOfPrevMonth)
+      const totalCurrent = Array.from(currentMap.values()).reduce((a, b) => a + b, 0)
 
-      // Calculate total current spending
-      const totalCurrent = (currentSpending as any[]).reduce((sum, item) => sum + parseFloat(item.total_amount), 0)
-
-      // Create spending patterns with trends
-      const patterns: SpendingPattern[] = (currentSpending as any[]).map(item => {
-        const currentAmount = parseFloat(item.total_amount)
-        const prevItem = (prevSpending as any[]).find(p => p.category === item.category)
-        const prevAmount = prevItem ? parseFloat(prevItem.total_amount) : 0
-        
+      const patterns: SpendingPattern[] = Array.from(currentMap.entries()).map(([cat, amt]) => {
+        const prevAmt = prevMap.get(cat) || 0
         let trend: 'increasing' | 'decreasing' | 'stable' = 'stable'
-        if (prevAmount > 0) {
-          const change = ((currentAmount - prevAmount) / prevAmount) * 100
+        if (prevAmt > 0) {
+          const change = ((amt - prevAmt) / prevAmt) * 100
           if (change > 10) trend = 'increasing'
           else if (change < -10) trend = 'decreasing'
         }
-
         return {
-          category: item.category,
-          amount: currentAmount,
-          percentage: totalCurrent > 0 ? Math.round((currentAmount / totalCurrent) * 100) : 0,
+          category: cat,
+          amount: amt,
+          percentage: totalCurrent > 0 ? Math.round((amt / totalCurrent) * 100) : 0,
           trend,
-          averageMonthly: currentAmount // Simplified for now
+          averageMonthly: amt,
         }
-      })
+      }).sort((a, b) => b.amount - a.amount).slice(0, 10)
 
       return patterns
     } catch (error) {
@@ -156,41 +145,34 @@ class FinancialInsightsService {
    */
   private static async getSpendingTrends(userId: string): Promise<any> {
     try {
-      // Get last 6 months of spending data
+      // App-side compute for last 6 months
       const sixMonthsAgo = new Date()
       sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
-      sixMonthsAgo.setDate(1) // Start of month
+      sixMonthsAgo.setDate(1)
 
-      const monthlySpending = await prisma.$queryRawUnsafe(`
-        SELECT 
-          DATE_TRUNC('month', date) as month,
-          SUM(ABS(amount)) as total_spending
-        FROM transactions 
-        WHERE "userId" = $1 
-          AND date >= $2
-          AND amount < 0
-        GROUP BY DATE_TRUNC('month', date)
-        ORDER BY month ASC
-      `, userId, sixMonthsAgo)
+      const rows = await prisma.transaction.findMany({
+        where: { userId },
+        select: { amount: true, date: true, category: true },
+        take: 10000,
+      })
 
-      // Get top spending categories
-      const topCategories = await prisma.$queryRawUnsafe(`
-        SELECT 
-          category,
-          SUM(ABS(amount)) as total_amount
-        FROM transactions 
-        WHERE "userId" = $1 
-          AND date >= $2
-          AND amount < 0
-        GROUP BY category
-        ORDER BY total_amount DESC
-        LIMIT 5
-      `, userId, sixMonthsAgo)
-
-      return {
-        monthlySpending: (monthlySpending as any[]).map(item => parseFloat(item.total_spending)),
-        categories: (topCategories as any[]).map(item => item.category)
+      const bucket = new Map<string, number>()
+      const catTotals = new Map<string, number>()
+      for (const tx of rows) {
+        const d = new Date(tx.date as any)
+        if (d >= sixMonthsAgo && (tx.amount ?? 0) < 0) {
+          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+          bucket.set(key, (bucket.get(key) || 0) + Math.abs(tx.amount || 0))
+          const primary = (tx.category && tx.category.length > 0 ? tx.category[0] : 'Other') as string
+          catTotals.set(primary, (catTotals.get(primary) || 0) + Math.abs(tx.amount || 0))
+        }
       }
+
+      const keys = Array.from(bucket.keys()).sort()
+      const monthlySpending = keys.map(k => bucket.get(k) || 0)
+      const categories = Array.from(catTotals.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([c]) => c)
+
+      return { monthlySpending, categories }
     } catch (error) {
       console.error('Error getting spending trends:', error)
       return {
@@ -205,6 +187,11 @@ class FinancialInsightsService {
    */
   private static analyzeSpendingPatterns(patterns: SpendingPattern[]): FinancialInsight[] {
     const insights: FinancialInsight[] = []
+
+    // Return early if no patterns
+    if (patterns.length === 0) {
+      return insights
+    }
 
     // Find highest spending category
     const highestSpending = patterns.reduce((max, current) => 

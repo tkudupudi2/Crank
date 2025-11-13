@@ -178,10 +178,10 @@ export default function TransactionsList({ transactions, accounts }: Transaction
   }
 
   const filteredTransactions = transactions.filter(transaction => {
-    const matchesSearch = transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = (transaction.description?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
                          (transaction.merchantName && transaction.merchantName.toLowerCase().includes(searchTerm.toLowerCase()))
     const matchesAccount = !selectedAccount || transaction.account.id === selectedAccount
-    const matchesCategory = !selectedCategory || transaction.category.includes(selectedCategory)
+    const matchesCategory = !selectedCategory || (transaction.category && transaction.category.includes(selectedCategory))
     
     // Date filtering
     let matchesDateRange = true
@@ -417,10 +417,19 @@ export default function TransactionsList({ transactions, accounts }: Transaction
                     </div>
                     <div className="flex-1">
                       <p className="font-medium">
-                        {transaction.merchantName || transaction.description}
+                        {transaction.merchantName || transaction.description || 
+                         (transaction.category && transaction.category.length > 0 
+                          ? transaction.category[0] 
+                          : 'Transaction')}
                       </p>
                       <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                        <span>{format(new Date(transaction.date), 'MMM d, yyyy')}</span>
+                        <span>
+                          {transaction.date
+                            ? format(new Date(transaction.date), 'MMM d, yyyy')
+                            : (transaction as any).dateUtc
+                            ? format(new Date((transaction as any).dateUtc), 'MMM d, yyyy')
+                            : 'N/A'}
+                        </span>
                         <span>•</span>
                         <span>{transaction.account.name}</span>
                         {transaction.pending && (

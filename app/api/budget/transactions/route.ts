@@ -116,22 +116,15 @@ export async function GET(request: Request) {
     console.log(`Fetching transactions for category: ${categoryId}`)
     console.log(`Plaid categories to match:`, plaidCategories)
 
-    // Get all transactions for the date range first to debug
-    const allTransactions = await prisma.transaction.findMany({
-      where: {
-        userId: userId,
-        date: {
-          gte: startDate,
-          lte: endDate,
-        }
-        // Include all transactions to see credit card activity
-      },
-      include: {
-        account: true
-      },
-      orderBy: {
-        date: 'desc'
-      }
+    // Fetch coarse set and filter app-side using decrypted date
+    const fetched = await prisma.transaction.findMany({
+      where: { userId: userId },
+      include: { account: true },
+      take: 10000,
+    })
+    const allTransactions = fetched.filter((tx: any) => {
+      const d = (tx as any).date ? new Date((tx as any).date as any) : null
+      return d && d >= startDate && d <= endDate
     })
 
     console.log(`Found ${allTransactions.length} total transactions in date range ${startDate.toISOString()} to ${endDate.toISOString()}`)
@@ -139,14 +132,17 @@ export async function GET(request: Request) {
     // Debug: Log all transactions to see what we have
     console.log('All transactions in date range:')
     allTransactions.forEach((tx: any, index: number) => {
-      console.log(`${index + 1}. ${tx.merchantName || tx.description} - $${Math.abs(tx.amount)} - Categories: ${tx.category?.join(', ') || 'None'} - Account: ${tx.account?.name || 'Unknown'} - Date: ${tx.date.toISOString()}`)
+      const d = (tx as any).dateUtc || (tx as any).date
+      const iso = d ? new Date(d as any).toISOString() : 'n/a'
+      console.log(`${index + 1}. ${tx.merchantName || tx.description} - $${Math.abs(tx.amount)} - Categories: ${tx.category?.join(', ') || 'None'} - Account: ${tx.account?.name || 'Unknown'} - Date: ${iso}`)
     })
 
     // Filter transactions by category
     const transactions = allTransactions.filter((transaction: any) => {
-      // Determine if this is a spending transaction based on account type and amount
+      // Determine if this is a spending transaction robustly (treat outflow as negative for all; allow positive for CC just in case)
       const isCreditCard = transaction.account?.type === 'credit'
-      const isSpending = isCreditCard ? transaction.amount > 0 : transaction.amount < 0
+      const amt = Number(transaction.amount) || 0
+      const isSpending = amt < 0 || (isCreditCard && amt > 0)
       
       if (!isSpending) {
         return false

@@ -1,6 +1,7 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { APP_SIDE_COMPUTE } from '@/lib/config'
 import { redirect } from 'next/navigation'
 import AnalyticsContent from '@/components/dashboard/AnalyticsContent'
 
@@ -28,29 +29,22 @@ export default async function AnalyticsPage() {
   const startDate = new Date()
   startDate.setDate(startDate.getDate() - 90)
 
-  const transactions = await prisma.transaction.findMany({
-    where: { 
-      userId: userId,
-      date: {
-        gte: startDate,
-        lte: endDate,
-      }
-    },
+  const transactionsRaw = await prisma.transaction.findMany({
+    where: { userId: userId },
     include: { account: true },
-    orderBy: { date: 'desc' },
+    take: 1000,
   })
+  const transactions = APP_SIDE_COMPUTE
+    ? transactionsRaw
+        .filter((t: any) => new Date(t.date as any) >= startDate && new Date(t.date as any) <= endDate)
+        .sort((a: any, b: any) => new Date(b.date as any).getTime() - new Date(a.date as any).getTime())
+    : transactionsRaw
 
   // Get monthly transaction data for trends (extend to include more months)
-  const monthlyTransactions = await prisma.transaction.findMany({
-    where: { 
-      userId: userId,
-      date: {
-        gte: new Date(new Date().getFullYear(), new Date().getMonth() - 12, 1), // Last 12 months to ensure we get October 2025
-      }
-    },
-    include: { account: true },
-    orderBy: { date: 'desc' },
-  })
+  const monthlyStart = new Date(new Date().getFullYear(), new Date().getMonth() - 12, 1)
+  const monthlyTransactions = APP_SIDE_COMPUTE
+    ? transactionsRaw.filter((t: any) => new Date(t.date as any) >= monthlyStart)
+    : transactionsRaw
 
   // Check if we have any data for analytics (accounts OR transactions)
   if (!accounts.length && !transactions.length) {

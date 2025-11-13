@@ -35,42 +35,42 @@ export default async function AccountsPage() {
       <AccountsList
         accounts={accounts.map(account => ({
           ...account,
-          dueDate: (account as any).dueDate?.toISOString() || null,
-          lastPaymentDate: (account as any).lastPaymentDate?.toISOString() || null,
-          maturityDate: (account as any).maturityDate?.toISOString() || null,
-          originationDate: (account as any).originationDate?.toISOString() || null,
+          dueDate: (account as any).dueDate ? new Date((account as any).dueDate as any).toISOString() : null,
+          lastPaymentDate: (account as any).lastPaymentDate ? new Date((account as any).lastPaymentDate as any).toISOString() : null,
+          maturityDate: (account as any).maturityDate ? new Date((account as any).maturityDate as any).toISOString() : null,
+          originationDate: (account as any).originationDate ? new Date((account as any).originationDate as any).toISOString() : null,
           aprs: (account as any).aprs,
         }))}
         creditCards={creditCards.map(account => ({
           ...account,
-          dueDate: (account as any).dueDate?.toISOString() || null,
-          lastPaymentDate: (account as any).lastPaymentDate?.toISOString() || null,
-          maturityDate: (account as any).maturityDate?.toISOString() || null,
-          originationDate: (account as any).originationDate?.toISOString() || null,
+          dueDate: (account as any).dueDate ? new Date((account as any).dueDate as any).toISOString() : null,
+          lastPaymentDate: (account as any).lastPaymentDate ? new Date((account as any).lastPaymentDate as any).toISOString() : null,
+          maturityDate: (account as any).maturityDate ? new Date((account as any).maturityDate as any).toISOString() : null,
+          originationDate: (account as any).originationDate ? new Date((account as any).originationDate as any).toISOString() : null,
           aprs: (account as any).aprs,
         }))}
         bankAccounts={bankAccounts.map(account => ({
           ...account,
-          dueDate: (account as any).dueDate?.toISOString() || null,
-          lastPaymentDate: (account as any).lastPaymentDate?.toISOString() || null,
-          maturityDate: (account as any).maturityDate?.toISOString() || null,
-          originationDate: (account as any).originationDate?.toISOString() || null,
+          dueDate: (account as any).dueDate ? new Date((account as any).dueDate as any).toISOString() : null,
+          lastPaymentDate: (account as any).lastPaymentDate ? new Date((account as any).lastPaymentDate as any).toISOString() : null,
+          maturityDate: (account as any).maturityDate ? new Date((account as any).maturityDate as any).toISOString() : null,
+          originationDate: (account as any).originationDate ? new Date((account as any).originationDate as any).toISOString() : null,
           aprs: (account as any).aprs,
         }))}
         mortgages={mortgages.map(account => ({
           ...account,
-          dueDate: (account as any).dueDate?.toISOString() || null,
-          lastPaymentDate: (account as any).lastPaymentDate?.toISOString() || null,
-          maturityDate: (account as any).maturityDate?.toISOString() || null,
-          originationDate: (account as any).originationDate?.toISOString() || null,
+          dueDate: (account as any).dueDate ? new Date((account as any).dueDate as any).toISOString() : null,
+          lastPaymentDate: (account as any).lastPaymentDate ? new Date((account as any).lastPaymentDate as any).toISOString() : null,
+          maturityDate: (account as any).maturityDate ? new Date((account as any).maturityDate as any).toISOString() : null,
+          originationDate: (account as any).originationDate ? new Date((account as any).originationDate as any).toISOString() : null,
           aprs: (account as any).aprs,
         }))}
         studentLoans={studentLoans.map(account => ({
           ...account,
-          dueDate: (account as any).dueDate?.toISOString() || null,
-          lastPaymentDate: (account as any).lastPaymentDate?.toISOString() || null,
-          maturityDate: (account as any).maturityDate?.toISOString() || null,
-          originationDate: (account as any).originationDate?.toISOString() || null,
+          dueDate: (account as any).dueDate ? new Date((account as any).dueDate as any).toISOString() : null,
+          lastPaymentDate: (account as any).lastPaymentDate ? new Date((account as any).lastPaymentDate as any).toISOString() : null,
+          maturityDate: (account as any).maturityDate ? new Date((account as any).maturityDate as any).toISOString() : null,
+          originationDate: (account as any).originationDate ? new Date((account as any).originationDate as any).toISOString() : null,
           aprs: (account as any).aprs,
         }))}
       />

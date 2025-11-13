@@ -224,7 +224,11 @@ export default function DashboardOverview({
                         {transaction.merchantName || transaction.description}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {format(new Date(transaction.date), 'MMM d')} • {transaction.account.name}
+                        {transaction.date 
+                          ? format(new Date(transaction.date), 'MMM d')
+                          : (transaction as any).dateUtc
+                          ? format(new Date((transaction as any).dateUtc), 'MMM d')
+                          : 'N/A'} • {transaction.account.name}
                       </p>
                     </div>
                   </div>

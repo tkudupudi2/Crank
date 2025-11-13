@@ -83,27 +83,25 @@ export async function GET() {
     console.log('Budget API - Date range:', startDate, 'to', endDate)
     console.log('Budget API - Period label:', periodLabel)
 
-    // Get all transactions for the calculated date range
-    console.log('Budget API - Fetching transactions for date range:', startDate, 'to', endDate)
-    const transactions = await prisma.transaction.findMany({
-      where: {
-        userId: userId,
-        date: {
-          gte: startDate,
-          lte: endDate,
-        }
-        // Include all transactions, not just expenses
-      },
-      include: {
-        account: true
-      }
+    // Get transactions for user (coarse fetch) and filter in app for Option A
+    console.log('Budget API - Fetching transactions (coarse) for user:', userId)
+    const fetched = await prisma.transaction.findMany({
+      where: { userId: userId },
+      include: { account: true },
+      take: 10000,
+    })
+    const transactions = fetched.filter((tx: any) => {
+      const d = (tx as any).date ? new Date((tx as any).date as any) : null
+      return d && d >= startDate && d <= endDate
     })
     console.log('Budget API - Found transactions:', transactions.length)
     
     // Debug: Log first few transactions to see actual dates
     console.log('Budget API - Sample transactions with dates:')
     transactions.slice(0, 3).forEach((tx: any, index: number) => {
-      console.log(`${index + 1}. ${tx.merchantName || tx.description} - Date: ${tx.date.toISOString()} - Amount: $${Math.abs(tx.amount)}`)
+      const d = (tx as any).dateUtc || (tx as any).date
+      const iso = d ? new Date(d as any).toISOString() : 'n/a'
+      console.log(`${index + 1}. ${tx.merchantName || tx.description} - Date: ${iso} - Amount: $${Math.abs(tx.amount)}`)
     })
 
     // Define budget categories and their mappings
@@ -145,9 +143,10 @@ export async function GET() {
       const transactionCategories = transaction.category || []
       let categorized = false
 
-      // Determine if this is a spending transaction based on account type and amount
+      // Determine if this is a spending transaction robustly
       const isCreditCard = transaction.account?.type === 'credit'
-      const isSpending = isCreditCard ? transaction.amount > 0 : transaction.amount < 0
+      const amt = Number(transaction.amount) || 0
+      const isSpending = amt < 0 || (isCreditCard && amt > 0)
       
       if (!isSpending) {
         return // Skip non-spending transactions
@@ -162,7 +161,7 @@ export async function GET() {
         )) {
           // For credit cards, positive amounts are purchases (spending)
           // For checking accounts, negative amounts are expenses (spending)
-          const spendingAmount = isCreditCard ? transaction.amount : Math.abs(transaction.amount)
+          const spendingAmount = Math.abs(amt)
           categorySpending[budgetCategory] += spendingAmount
           categorized = true
           break
@@ -175,16 +174,16 @@ export async function GET() {
         
         if (merchantName.includes('mcdonald') || merchantName.includes('starbucks') || 
             merchantName.includes('restaurant') || merchantName.includes('cafe')) {
-          const spendingAmount = isCreditCard ? transaction.amount : Math.abs(transaction.amount)
+          const spendingAmount = Math.abs(amt)
           categorySpending['Food & Dining'] += spendingAmount
         } else if (merchantName.includes('uber') || merchantName.includes('lyft') || 
                    merchantName.includes('gas') || merchantName.includes('fuel')) {
-          const spendingAmount = isCreditCard ? transaction.amount : Math.abs(transaction.amount)
+          const spendingAmount = Math.abs(amt)
           categorySpending['Transportation'] += spendingAmount
         } else if (merchantName.includes('gym') || merchantName.includes('fitness') || 
                    merchantName.includes('movie') || merchantName.includes('theater') ||
                    merchantName.includes('climbing')) {
-          const spendingAmount = isCreditCard ? transaction.amount : Math.abs(transaction.amount)
+          const spendingAmount = Math.abs(amt)
           categorySpending['Entertainment'] += spendingAmount
         } else if (merchantName.includes('shop') || merchantName.includes('store') || 
                    merchantName.includes('retail')) {
@@ -195,7 +194,7 @@ export async function GET() {
           categorySpending['Other'] += spendingAmount
         }
       } else if (!categorized) {
-        const spendingAmount = isCreditCard ? transaction.amount : Math.abs(transaction.amount)
+        const spendingAmount = Math.abs(amt)
         categorySpending['Other'] += spendingAmount
       }
     })

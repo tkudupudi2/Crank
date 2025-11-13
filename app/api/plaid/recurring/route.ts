@@ -31,9 +31,11 @@ export async function GET(request: NextRequest) {
           where: { plaidItemId: item.id },
         })
         const accountByPlaidId = new Map(accounts.map(a => [a.plaidAccountId, a]))
+        const accountIds = accounts.map(a => a.plaidAccountId).filter((id): id is string => id !== null)
 
         const resp = await plaidClient.transactionsRecurringGet({
           access_token: item.accessToken,
+          account_ids: accountIds,
         })
 
         const data = resp.data

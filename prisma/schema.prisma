@@ -40,20 +40,38 @@ model Account {
   plaidAccountId  String?   @unique // Made optional for virtual accounts
   plaidItemId     String?   // Made optional for virtual accounts
   institutionId   String?   // Made optional for virtual accounts
-  institutionName String
-  name            String
-  type            String    // 'credit', 'depository', 'loan', 'investment', 'other'
-  subtype         String?   // 'credit_card', 'checking', 'savings', 'mortgage', 'student', 'cash', 'other', etc.
-  mask            String?   // Last 4 digits
+  institutionName String    // Keep unencrypted for Plaid syncing
+  name            String?   // Made nullable - encrypted in nameEnc
+  type            String    // Keep unencrypted for Plaid syncing
+  subtype         String?   // Made nullable - encrypted in subtypeEnc
+  mask            String?   // Made nullable - encrypted in maskEnc
+  // Encrypted mirrors for PII/descriptive fields
+  nameEnc         String?
+  maskEnc         String?
+  subtypeEnc      String?
+  servicerAddressEnc String?
+  propertyAddressEnc String?
+  repaymentPlanEnc String?
   currentBalance  Float?
   availableBalance Float?
+  // Encrypted/derived mirrors for numeric/date fields (Step 2)
+  currentBalanceEnc String?
+  availableBalanceEnc String?
+  creditLimitEnc   String?
+  lastPaymentAmountEnc String?
+  lastPaymentDateEnc String?
+  currentBalanceNum Float?
+  availableBalanceNum Float?
+  creditLimitNum   Float?
+  lastPaymentAmountNum Float?
+  lastPaymentDateUtc DateTime?
   currencyCode    String    @default("USD")
   dueDate         DateTime? // For credit cards: payment due date
   minimumPayment  Float?    // For credit cards: minimum payment required
-  // Additional liability fields
-  creditLimit     Float?    // For credit cards: credit limit
-  lastPaymentAmount Float?  // For credit cards: last payment amount
-  lastPaymentDate DateTime? // For credit cards: last payment date
+  // Additional liability fields (kept for Plaid compatibility, encrypted in _Enc columns)
+  creditLimit     Float?    // For credit cards: credit limit - nullable, encrypted in creditLimitEnc
+  lastPaymentAmount Float?  // For credit cards: last payment amount - nullable, encrypted in lastPaymentAmountEnc
+  lastPaymentDate DateTime? // For credit cards: last payment date - nullable, encrypted in lastPaymentDateEnc
   aprs            Json?     // For credit cards: APR information as JSON
   // Mortgage fields
   originalBalance Float?    // For mortgages: original loan amount
@@ -92,13 +110,18 @@ model Transaction {
   id              String    @id @default(cuid())
   userId          String
   accountId       String
-  plaidTransactionId String @unique
-  amount          Float
-  description     String
-  merchantName    String?
-  category        String[]
-  subcategory     String?
-  date            DateTime
+  plaidTransactionId String @unique // Keep unencrypted for Plaid syncing
+  amount          Float?   // Made nullable - encrypted in amountEnc, derived in amountNum
+  description     String?  // Made nullable - encrypted in descriptionEnc
+  merchantName    String?  // Made nullable - encrypted in merchantNameEnc
+  category        String[] // Keep unencrypted array for queries, encrypted JSON in categoryEnc
+  subcategory     String?  // Made nullable - encrypted in subcategoryEnc
+  date            DateTime? // Made nullable - encrypted in dateEnc, derived in dateUtc
+  // Encrypted/derived mirrors for numeric/date fields (Step 2)
+  amountEnc       String?
+  dateEnc         String?
+  amountNum       Float?
+  dateUtc         DateTime?
   pending         Boolean   @default(false)
   accountOwner    String?
   isManual        Boolean   @default(false) // For manually added transactions
@@ -109,6 +132,18 @@ model Transaction {
   postalCode      String?   // Postal/ZIP code
   country         String?   // Country code
   storeNumber     String?   // Store number
+  // Encrypted mirrors for PII/descriptive fields
+  descriptionEnc  String?
+  merchantNameEnc String?
+  accountOwnerEnc String?
+  addressEnc      String?
+  cityEnc         String?
+  regionEnc       String?
+  postalCodeEnc   String?
+  countryEnc      String?
+  storeNumberEnc  String?
+  subcategoryEnc  String?
+  categoryEnc     String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 

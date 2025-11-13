@@ -3,6 +3,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import PaymentsContent from '@/components/dashboard/PaymentsContent'
+import { APP_SIDE_COMPUTE } from '@/lib/config'
 
 export default async function PaymentsPage() {
   const session = await getServerSession(authOptions)
@@ -14,11 +15,14 @@ export default async function PaymentsPage() {
   const userId = (session?.user as any)?.id
 
   // Get all transactions for payment analysis
-  const transactions = await prisma.transaction.findMany({
+  const transactionsRaw = await prisma.transaction.findMany({
     where: { userId: userId },
     include: { account: true },
-    orderBy: { date: 'desc' },
+    take: 500,
   })
+  const transactions = APP_SIDE_COMPUTE
+    ? transactionsRaw.slice().sort((a: any, b: any) => new Date(b.date as any).getTime() - new Date(a.date as any).getTime())
+    : transactionsRaw
 
   // Get liability accounts for future payments
   const liabilityAccounts = await prisma.account.findMany({

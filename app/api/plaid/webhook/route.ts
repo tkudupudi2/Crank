@@ -494,9 +494,17 @@ async function fetchRecurringForItem(itemId: string) {
       return
     }
 
+    // Get account IDs for this item
+    const accounts = await prisma.account.findMany({
+      where: { plaidItemId: plaidItem.id },
+      select: { plaidAccountId: true },
+    })
+    const accountIds = accounts.map(a => a.plaidAccountId).filter((id): id is string => id !== null)
+
     // Trigger a refresh/fetch to ensure we react to webhook
     const resp = await plaidClient.transactionsRecurringGet({
       access_token: plaidItem.accessToken,
+      account_ids: accountIds,
     })
 
     const outflows = resp.data.outflow_streams?.length || 0

@@ -1,6 +1,7 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { APP_SIDE_COMPUTE } from '@/lib/config'
 import DashboardOverview from '@/components/dashboard/DashboardOverview'
 import AnalyticsBlurb from '@/components/dashboard/AnalyticsBlurb'
 import AccountConnection from '@/components/dashboard/AccountConnection'
@@ -51,7 +52,7 @@ export default async function DashboardPage() {
   })
 
   // Get recent transactions (limit to 6 for dashboard display, exclude virtual accounts)
-  const recentTransactions = await prisma.transaction.findMany({
+  const recentTransactionsRaw = await prisma.transaction.findMany({
     where: { 
       userId: userId,
       account: {
@@ -59,22 +60,22 @@ export default async function DashboardPage() {
       } as any
     },
     include: { account: true },
-    orderBy: { date: 'desc' },
-    take: 6,
+    take: 50,
   })
+  const recentTransactions = (APP_SIDE_COMPUTE ? recentTransactionsRaw.slice().sort((a: any, b: any) => new Date(b.date as any).getTime() - new Date(a.date as any).getTime()) : recentTransactionsRaw).slice(0,6)
 
   // Get all transactions for analytics (last 90 days, include manual transactions for spending analysis)
-  const allTransactions = await prisma.transaction.findMany({
-    where: { 
-      userId: userId,
-      date: {
-        gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) // Last 90 days
-      }
-      // Include both real accounts and manual transactions for spending analysis
-    },
+  const allTransactionsRaw = await prisma.transaction.findMany({
+    where: { userId: userId },
     include: { account: true },
-    orderBy: { date: 'desc' },
+    take: 1000,
   })
+  const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
+  const allTransactions = APP_SIDE_COMPUTE
+    ? allTransactionsRaw
+        .filter((t: any) => new Date(t.date as any) >= ninetyDaysAgo)
+        .sort((a: any, b: any) => new Date(b.date as any).getTime() - new Date(a.date as any).getTime())
+    : allTransactionsRaw
 
   // Calculate net worth (assets minus debts)
   const bankAccounts = allAccounts.filter((account: any) => account.type === 'depository')

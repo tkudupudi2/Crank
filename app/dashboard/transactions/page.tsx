@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { plaidClient } from '@/lib/plaid'
+import { APP_SIDE_COMPUTE } from '@/lib/config'
 import TransactionsList from '@/components/dashboard/TransactionsList'
 import { redirect } from 'next/navigation'
 
@@ -252,12 +253,17 @@ export default async function TransactionsPage() {
     console.log('Initial sync already completed, skipping auto-sync')
   }
 
-  const transactions = await prisma.transaction.findMany({
+  const transactionsRaw = await prisma.transaction.findMany({
     where: { userId: userId },
     include: { account: true },
-    orderBy: { date: 'desc' },
-    take: 100,
+    take: 300,
   })
+  const transactions = APP_SIDE_COMPUTE
+    ? transactionsRaw
+        .slice()
+        .sort((a: any, b: any) => new Date(b.date as any).getTime() - new Date(a.date as any).getTime())
+        .slice(0, 100)
+    : transactionsRaw
 
   const accounts = await prisma.account.findMany({
     where: { userId: userId, isActive: true },
