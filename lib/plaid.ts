@@ -30,5 +30,5 @@ export const plaidConfig = {
   secret: process.env.PLAID_SECRET!,
   environment: process.env.PLAID_ENV || 'sandbox',
   webhook: `${process.env.NEXT_PUBLIC_APP_URL}/api/plaid/webhook`,
-  products: ['transactions', 'identity', 'liabilities', 'transfer'],
+  products: ['transactions', 'liabilities'],
 }
